@@ -211,7 +211,7 @@ export function ChartAreaInteractive({
         ) : (
         <ChartContainer
           config={chartConfig}
-          className='min-h-0 w-full flex-1 aspect-auto text-xs [&_.recharts-responsive-container]:h-full'
+          className='min-h-[220px] w-full flex-1 aspect-auto text-xs sm:min-h-[260px] [&_.recharts-responsive-container]:h-full'
         >
           <AreaChart
             data={chartData}

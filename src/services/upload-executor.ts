@@ -346,7 +346,13 @@ class UploadExecutor {
           return { chunkIndex, success: false, error: '任务已取消' }
         }
 
-        await uploadChunk(chunkBlob, taskId, chunkIndex, chunkMd5)
+        await uploadChunk(
+          chunkBlob,
+          taskId,
+          chunkIndex,
+          chunkMd5,
+          abortController.signal
+        )
 
         context.activeUploads.delete(chunkIndex)
         context.retryCount.delete(chunkIndex)

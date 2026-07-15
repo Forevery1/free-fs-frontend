@@ -13,6 +13,7 @@ import { workspaceApi } from '@/api/workspace'
 import { roleApi } from '@/api/role'
 import { usePermission } from '@/hooks/use-permission'
 import { useAuth } from '@/contexts/auth-context'
+import { useSettingsModal } from '@/contexts/settings-modal-context'
 import { useWorkspaceStore } from '@/store/workspace'
 import type { WorkspaceMember, WorkspaceInvitation } from '@/types/workspace'
 import type { PageResult } from '@/types/permission'
@@ -69,6 +70,7 @@ const PAGE_SIZE = 10
 export function SettingsMembers() {
   const { t } = useTranslation('settings')
   const { hasPermission } = usePermission()
+  const { inviteDialogRequest } = useSettingsModal()
   const { user: currentUser, activateWorkspace } = useAuth()
   const workspaces = useWorkspaceStore((s) => s.workspaces)
   const currentWorkspaceId = useWorkspaceStore((s) => s.currentWorkspaceId)
@@ -149,6 +151,12 @@ export function SettingsMembers() {
     fetchRoles()
     fetchInvitations()
   }, [fetchRoles, fetchInvitations])
+
+  useEffect(() => {
+    if (inviteDialogRequest > 0 && canInvite) {
+      setInviteOpen(true)
+    }
+  }, [inviteDialogRequest, canInvite])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()

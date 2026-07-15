@@ -47,16 +47,44 @@ export function formatHomeStorageNumber(
   }).format(value)
 }
 
-/** 首页存储概览：数字格式与图表一致，再拼服务端单位文案 */
+const HOME_STORAGE_UNIT_INDEX: Record<HomeUsedBytesUnit, number> = {
+  1: 0,
+  2: 1,
+  3: 2,
+}
+
+const HOME_STORAGE_UNIT_LABELS = ['KB', 'MB', 'GB', 'TB']
+
+function formatReadableStorageNumber(value: number): string {
+  if (value === 0) return '0'
+  if (Math.abs(value) >= 100) {
+    return value.toLocaleString('zh-CN', { maximumFractionDigits: 1 })
+  }
+  return value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
+}
+
+/** 首页存储概览：自动换算到更合适的单位，避免出现“2.44万 MB” */
 export function formatHomeStorageDisplay(
   value: number,
   unitLabel: string,
   storageUnit: HomeUsedBytesUnit
 ): string {
   if (!Number.isFinite(value)) return '—'
-  const num = formatHomeStorageNumber(value, storageUnit)
-  const u = unitLabel.trim()
-  return u ? `${num} ${u}` : num
+  let displayValue = value
+  let unitIndex = HOME_STORAGE_UNIT_INDEX[storageUnit]
+
+  while (
+    Math.abs(displayValue) >= 1024 &&
+    unitIndex < HOME_STORAGE_UNIT_LABELS.length - 1
+  ) {
+    displayValue /= 1024
+    unitIndex += 1
+  }
+
+  const num = formatReadableStorageNumber(displayValue)
+  const fallbackUnit = unitLabel.trim()
+  const unit = HOME_STORAGE_UNIT_LABELS[unitIndex] || fallbackUnit
+  return unit ? `${num} ${unit}` : num
 }
 
 export const formatDate = (

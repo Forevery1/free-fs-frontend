@@ -21,12 +21,6 @@
     "loadFailed": "加载失败",
     "retry": "重试"
   },
-  "openSource": {
-    "title": "开源项目",
-    "description": "Free Fs 是一款基于 Spring Boot 和 React 构建的开源文件管理系统，欢迎大家交流学习。",
-    "gitee": "Gitee 仓库",
-    "github": "GitHub 仓库"
-  },
   "chart": {
     "title": "存储增长",
     "seriesLabel": "已用存储 ({{unit}})",

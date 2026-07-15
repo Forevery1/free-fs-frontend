@@ -97,7 +97,6 @@ export function FileGridView({
   const selectedSet = new Set(selectedKeys)
   const selectedFiles = fileList.filter((f) => selectedSet.has(f.id))
   const hasUnfavorited = selectedFiles.some((f) => !f.isFavorite)
-  const downloadableFiles = selectedFiles.filter((f) => !f.isDir)
 
   // 拖拽功能
   const {
@@ -169,6 +168,7 @@ export function FileGridView({
               <ContextMenuTrigger asChild>
                 <div
                   data-file-id={file.id}
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '150px 150px' }}
                   className={cn(
                     'group relative cursor-pointer rounded-lg p-4 pb-2 text-center transition-all',
                     'hover:bg-accent',
@@ -327,6 +327,9 @@ export function FileGridView({
                         <img
                           src={file.thumbnailUrl}
                           alt={file.displayName}
+                          loading='lazy'
+                          decoding='async'
+                          fetchPriority='low'
                           className='h-full w-full object-cover object-center pointer-events-none select-none'
                           draggable={false}
                           onContextMenu={(e) => e.preventDefault()}
@@ -367,11 +370,11 @@ export function FileGridView({
                 {isMultiSelected ? (
                   // 多选菜单
                   <>
-                    {canRead && downloadableFiles.length > 0 && (
+                    {canRead && selectedFiles.length > 0 && (
                       <ContextMenuItem
                         onClick={(e) => {
                           e.stopPropagation()
-                          onDownload(downloadableFiles)
+                          onDownload(selectedFiles)
                         }}
                       >
                         <Download className='mr-2 h-4 w-4' />

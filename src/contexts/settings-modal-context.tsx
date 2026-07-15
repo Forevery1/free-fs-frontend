@@ -20,8 +20,9 @@ type SettingsModalValue = {
   setOpen: (open: boolean) => void
   tab: SettingsTab
   setTab: (tab: SettingsTab) => void
-  /** 打开设置；可指定初始面板，默认个人资料 */
   openSettings: (tab?: SettingsTab) => void
+  inviteDialogRequest: number
+  openMemberInvite: () => void
 }
 
 const SettingsModalContext = createContext<SettingsModalValue | null>(null)
@@ -29,9 +30,16 @@ const SettingsModalContext = createContext<SettingsModalValue | null>(null)
 export function SettingsModalProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<SettingsTab>('profile')
+  const [inviteDialogRequest, setInviteDialogRequest] = useState(0)
 
   const openSettings = useCallback((next?: SettingsTab) => {
     if (next) setTab(next)
+    setOpen(true)
+  }, [])
+
+  const openMemberInvite = useCallback(() => {
+    setTab('members')
+    setInviteDialogRequest((request) => request + 1)
     setOpen(true)
   }, [])
 
@@ -42,8 +50,10 @@ export function SettingsModalProvider({ children }: { children: ReactNode }) {
       tab,
       setTab,
       openSettings,
+      inviteDialogRequest,
+      openMemberInvite,
     }),
-    [open, tab, openSettings]
+    [open, tab, openSettings, inviteDialogRequest, openMemberInvite]
   )
 
   return (
@@ -56,7 +66,7 @@ export function SettingsModalProvider({ children }: { children: ReactNode }) {
 export function useSettingsModal() {
   const ctx = useContext(SettingsModalContext)
   if (!ctx) {
-    throw new Error('useSettingsModal 须在 SettingsModalProvider 内使用')
+    throw new Error('useSettingsModal must be used within SettingsModalProvider')
   }
   return ctx
 }

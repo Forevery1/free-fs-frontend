@@ -227,12 +227,12 @@ export function FileListView({
               selectedKeys.includes(f.id)
             )
             const hasUnfavorited = selectedFiles.some((f) => !f.isFavorite)
-            const downloadableFiles = selectedFiles.filter((f) => !f.isDir)
             return (
               <ContextMenu key={file.id}>
                 <ContextMenuTrigger asChild>
                   <TableRow
                     data-file-id={file.id}
+                    style={{ contentVisibility: 'auto', containIntrinsicSize: '48px' }}
                     className={cn(
                       'group min-h-[48px] border-b-0 transition-colors duration-150',
                       'hover:bg-primary/[0.06]',
@@ -270,6 +270,9 @@ export function FileListView({
                             <img
                               src={file.thumbnailUrl}
                               alt={file.displayName}
+                              loading='lazy'
+                              decoding='async'
+                              fetchPriority='low'
                               className='size-7 rounded object-cover pointer-events-none select-none'
                               draggable={false}
                               onContextMenu={(e) => e.preventDefault()}
@@ -442,11 +445,11 @@ export function FileListView({
                   {isMultiSelected ? (
                     // 多选菜单
                     <>
-                      {canRead && downloadableFiles.length > 0 && (
+                      {canRead && selectedFiles.length > 0 && (
                         <ContextMenuItem
                           onClick={(e) => {
                             e.stopPropagation()
-                            onDownload(downloadableFiles)
+                            onDownload(selectedFiles)
                           }}
                         >
                           <Download className='mr-2 h-4 w-4' />

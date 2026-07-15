@@ -159,3 +159,25 @@ export interface FileTransferTaskVO {
   remainTime?: number
   uploadedSize?: number
 }
+
+export type FolderDownloadTaskStatus =
+  | 'queued'
+  | 'scanning'
+  | 'packing'
+  | 'completed'
+  | 'failed'
+
+export interface FolderDownloadTaskVO {
+  taskId: string
+  folderId: string
+  folderName: string
+  status: FolderDownloadTaskStatus
+  progress: number
+  totalFiles: number
+  processedFiles: number
+  totalBytes: number
+  processedBytes: number
+  zipSize?: number
+  message?: string
+  errorMessage?: string
+}

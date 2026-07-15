@@ -46,27 +46,28 @@ export function FileBulkSelectionBar({
       onClear={onClear}
       ariaLabel={t('bulk.ariaBar')}
     >
+      <RequirePermission code='file:read'>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type='button'
+              variant='outline'
+              size='icon'
+              className='size-8 shrink-0'
+              onClick={onDownload}
+              aria-label={t('bulk.ariaDownload')}
+            >
+              <Download />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{t('rowMenu.download')}</p>
+          </TooltipContent>
+        </Tooltip>
+      </RequirePermission>
+
       {selectedCount === 1 ? (
         <>
-          <RequirePermission code='file:read'>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='icon'
-                  className='size-8 shrink-0'
-                  onClick={onDownload}
-                  aria-label={t('bulk.ariaDownload')}
-                >
-                  <Download />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{t('rowMenu.download')}</p>
-              </TooltipContent>
-            </Tooltip>
-          </RequirePermission>
           <RequirePermission code='file:write'>
             <Tooltip>
               <TooltipTrigger asChild>

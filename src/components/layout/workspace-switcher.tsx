@@ -11,6 +11,7 @@ import {
 import { toast } from 'sonner'
 import { useWorkspaceStore } from '@/store/workspace'
 import { useAuth } from '@/contexts/auth-context'
+import { useSettingsModal } from '@/contexts/settings-modal-context'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +32,7 @@ export function WorkspaceSwitcher() {
   const navigate = useNavigate()
   const { isMobile, state } = useSidebar()
   const { activateWorkspace } = useAuth()
+  const { openSettings, openMemberInvite } = useSettingsModal()
   const workspaces = useWorkspaceStore((s) => s.workspaces)
   const currentWorkspaceId = useWorkspaceStore((s) => s.currentWorkspaceId)
   const [switching, setSwitching] = useState(false)
@@ -112,7 +114,7 @@ export function WorkspaceSwitcher() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        navigate(`/w/${currentWorkspace.slug}/settings`)
+                        openSettings('workspace')
                       }}
                       className='flex-1 flex items-center justify-center gap-2 h-8 px-3 text-xs rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors'
                     >
@@ -122,7 +124,7 @@ export function WorkspaceSwitcher() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        navigate(`/w/${currentWorkspace.slug}/settings/members`)
+                        openMemberInvite()
                       }}
                       className='flex-1 flex items-center justify-center gap-2 h-8 px-3 text-xs rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors'
                     >

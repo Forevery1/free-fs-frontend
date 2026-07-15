@@ -21,12 +21,6 @@
     "loadFailed": "Failed to load",
     "retry": "Retry"
   },
-  "openSource": {
-    "title": "Open source",
-    "description": "Free Fs is an open-source file manager built with Spring Boot and React. Contributions and discussion welcome.",
-    "gitee": "Gitee",
-    "github": "GitHub"
-  },
   "chart": {
     "title": "Storage growth",
     "seriesLabel": "Used storage ({{unit}})",

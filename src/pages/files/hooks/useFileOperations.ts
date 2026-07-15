@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { FileItem } from '@/types/file'
+import type { FolderDownloadTaskVO } from '@/types/transfer'
 import { toast } from 'sonner'
 import {
   deleteFiles,
@@ -10,8 +11,75 @@ import {
   favoriteFile,
   unfavoriteFile,
 } from '@/api/file'
+import {
+  createFolderDownloadTask,
+  getFolderDownloadTask,
+} from '@/api/transfer'
 import { openFilePreviewWithToken } from '@/utils/preview'
 import { getCurrentWorkspaceId } from '@/store/workspace'
+
+export type FolderDownloadPanelTask = FolderDownloadTaskVO & {
+  downloadStarted?: boolean
+}
+
+const FOLDER_DOWNLOAD_STORAGE_KEY = 'free-fs-folder-download-tasks'
+const FOLDER_DOWNLOAD_START_GAP_MS = 1500
+
+function isFolderDownloadTaskActive(task: FolderDownloadTaskVO) {
+  return (
+    task.status === 'queued' ||
+    task.status === 'scanning' ||
+    task.status === 'packing'
+  )
+}
+
+function readStoredFolderDownloadTasks(): FolderDownloadPanelTask[] {
+  try {
+    const raw = localStorage.getItem(FOLDER_DOWNLOAD_STORAGE_KEY)
+    if (!raw) return []
+    const tasks = JSON.parse(raw)
+    if (!Array.isArray(tasks)) return []
+    return tasks.filter(isFolderDownloadTaskActive).slice(0, 5)
+  } catch {
+    return []
+  }
+}
+
+function writeStoredFolderDownloadTasks(tasks: FolderDownloadPanelTask[]) {
+  try {
+    const activeTasks = tasks.filter(isFolderDownloadTaskActive).slice(0, 5)
+    if (activeTasks.length === 0) {
+      localStorage.removeItem(FOLDER_DOWNLOAD_STORAGE_KEY)
+      return
+    }
+    localStorage.setItem(
+      FOLDER_DOWNLOAD_STORAGE_KEY,
+      JSON.stringify(activeTasks)
+    )
+  } catch {
+    // 本地存储不可用时不影响下载流程。
+  }
+}
+
+function getFolderZipFileName(folderName: string) {
+  return folderName.toLowerCase().endsWith('.zip')
+    ? folderName
+    : `${folderName}.zip`
+}
+
+function triggerBrowserDownload(url: string, fileName: string) {
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.style.display = 'none'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms))
+}
 
 export function useFileOperations(
   refreshCallback: () => void,
@@ -37,6 +105,13 @@ export function useFileOperations(
   const [sharingFiles, setSharingFiles] = useState<FileItem[]>([])
   const [deletingFiles, setDeletingFiles] = useState<FileItem[]>([])
   const [detailFile, setDetailFile] = useState<FileItem | null>(null)
+  const [folderDownloadTasks, setFolderDownloadTasks] = useState<
+    FolderDownloadPanelTask[]
+  >(() => readStoredFolderDownloadTasks())
+  const startedFolderDownloadTaskIds = useRef<Set<string>>(new Set())
+  const failedFolderDownloadTaskIds = useRef<Set<string>>(new Set())
+  const restoredFolderDownloadTaskIds = useRef<Set<string>>(new Set())
+  const folderDownloadQueue = useRef(Promise.resolve())
 
   /**
    * 打开创建文件夹弹窗
@@ -183,25 +258,175 @@ export function useFileOperations(
     setDeleteDialogVisible(true)
   }, [])
 
+  const upsertFolderDownloadTask = useCallback(
+    (task: FolderDownloadTaskVO, patch?: Partial<FolderDownloadPanelTask>) => {
+      setFolderDownloadTasks((prev) => {
+        const existing = prev.find((item) => item.taskId === task.taskId)
+        const nextTask = {
+          ...existing,
+          ...task,
+          ...patch,
+        } as FolderDownloadPanelTask
+
+        if (!existing) {
+          return [nextTask, ...prev].slice(0, 5)
+        }
+
+        return prev.map((item) =>
+          item.taskId === task.taskId ? nextTask : item
+        )
+      })
+    },
+    []
+  )
+
+  const buildDownloadParams = useCallback(() => {
+    const token =
+      localStorage.getItem('accessToken') ||
+      sessionStorage.getItem('accessToken')
+    const workspaceId = getCurrentWorkspaceId()
+    const params = new URLSearchParams()
+    if (token) {
+      params.set('Authorization', `Bearer ${token}`)
+    }
+    if (workspaceId) {
+      params.set('X-Workspace-Id', workspaceId)
+    }
+    return params
+  }, [])
+
+  const buildFolderTaskDownloadUrl = useCallback(
+    (taskId: string) => {
+      const params = buildDownloadParams()
+      return `${import.meta.env.VITE_API_BASE_URL}/apis/transfer/folder-download/tasks/${taskId}/file?${params.toString()}`
+    },
+    [buildDownloadParams]
+  )
+
+  const triggerFolderTaskDownload = useCallback((task: FolderDownloadTaskVO) => {
+    const download = async () => {
+      triggerBrowserDownload(
+        buildFolderTaskDownloadUrl(task.taskId),
+        getFolderZipFileName(task.folderName)
+      )
+      await wait(FOLDER_DOWNLOAD_START_GAP_MS)
+    }
+
+    const queuedDownload = folderDownloadQueue.current.then(download, download)
+    folderDownloadQueue.current = queuedDownload.catch(() => undefined)
+    return queuedDownload
+  }, [buildFolderTaskDownloadUrl])
+
+  const handleFolderDownloadTaskUpdate = useCallback(
+    (task: FolderDownloadTaskVO) => {
+      if (
+        task.status === 'completed' &&
+        !startedFolderDownloadTaskIds.current.has(task.taskId)
+      ) {
+        startedFolderDownloadTaskIds.current.add(task.taskId)
+        upsertFolderDownloadTask(task, { downloadStarted: true })
+        void triggerFolderTaskDownload(task)
+          .then(() => {
+            toast.success(`已交给浏览器下载 ${getFolderZipFileName(task.folderName)}`)
+          })
+          .catch(() => {
+            toast.error(`${getFolderZipFileName(task.folderName)} 下载启动失败`)
+          })
+        return
+      }
+
+      if (
+        task.status === 'failed' &&
+        !failedFolderDownloadTaskIds.current.has(task.taskId)
+      ) {
+        failedFolderDownloadTaskIds.current.add(task.taskId)
+        toast.error(task.errorMessage || '文件夹打包失败')
+      }
+
+      upsertFolderDownloadTask(task)
+    },
+    [triggerFolderTaskDownload, upsertFolderDownloadTask]
+  )
+
+  const startFolderDownload = useCallback(
+    async (folder: FileItem) => {
+      try {
+        const task = await createFolderDownloadTask(folder.id)
+        upsertFolderDownloadTask(task)
+        handleFolderDownloadTaskUpdate(task)
+        if (isFolderDownloadTaskActive(task)) {
+          toast.info(`正在准备下载 ${folder.displayName}`)
+        }
+      } catch (error) {
+        toast.error('创建文件夹下载任务失败')
+      }
+    },
+    [handleFolderDownloadTaskUpdate, upsertFolderDownloadTask]
+  )
+
+  const dismissFolderDownloadTask = useCallback((taskId: string) => {
+    setFolderDownloadTasks((prev) =>
+      prev.filter((task) => task.taskId !== taskId)
+    )
+    startedFolderDownloadTaskIds.current.delete(taskId)
+    failedFolderDownloadTaskIds.current.delete(taskId)
+    restoredFolderDownloadTaskIds.current.delete(taskId)
+  }, [])
+
+  useEffect(() => {
+    writeStoredFolderDownloadTasks(folderDownloadTasks)
+  }, [folderDownloadTasks])
+
+  useEffect(() => {
+    const restoredTasks = folderDownloadTasks.filter(
+      (task) =>
+        isFolderDownloadTaskActive(task) &&
+        !restoredFolderDownloadTaskIds.current.has(task.taskId)
+    )
+    if (restoredTasks.length === 0) return
+
+    restoredTasks.forEach((task) => {
+      restoredFolderDownloadTaskIds.current.add(task.taskId)
+      getFolderDownloadTask(task.taskId)
+        .then(handleFolderDownloadTaskUpdate)
+        .catch(() => {
+          setFolderDownloadTasks((prev) =>
+            prev.filter((item) => item.taskId !== task.taskId)
+          )
+        })
+    })
+  }, [folderDownloadTasks, handleFolderDownloadTaskUpdate])
+
+  useEffect(() => {
+    const activeTasks = folderDownloadTasks.filter(isFolderDownloadTaskActive)
+    if (activeTasks.length === 0) return
+
+    const timer = window.setInterval(() => {
+      activeTasks.forEach((task) => {
+        getFolderDownloadTask(task.taskId)
+          .then(handleFolderDownloadTaskUpdate)
+          .catch(() => {
+            // 后台轮询失败时保持当前进度，不打扰用户。
+          })
+      })
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [folderDownloadTasks, handleFolderDownloadTaskUpdate])
+
   /**
    * 下载文件
    */
   const handleDownload = useCallback((files: FileItem | FileItem[]) => {
     const fileArray = Array.isArray(files) ? files : [files]
-    const token =
-      localStorage.getItem('accessToken') ||
-      sessionStorage.getItem('accessToken')
-    const workspaceId = getCurrentWorkspaceId()
+    const normalFiles = fileArray.filter((file) => !file.isDir)
+    const folders = fileArray.filter((file) => file.isDir)
 
     // 使用延迟下载避免浏览器阻止多个下载
-    fileArray.forEach((file, index) => {
+    normalFiles.forEach((file, index) => {
       setTimeout(() => {
         // 构建下载链接，将 token 和 workspaceId 放到 URL 参数中
-        const params = new URLSearchParams()
-        params.set('Authorization', `Bearer ${token}`)
-        if (workspaceId) {
-          params.set('X-Workspace-Id', workspaceId)
-        }
+        const params = buildDownloadParams()
         
         const downloadUrl = `${import.meta.env.VITE_API_BASE_URL}/apis/transfer/download/${file.id}?${params.toString()}`
 
@@ -215,12 +440,20 @@ export function useFileOperations(
       }, index * 200) // 每个文件延迟 200ms
     })
 
-    const successMsg =
-      fileArray.length === 1
-        ? t('operations.downloadOne')
-        : t('operations.downloadMany', { count: fileArray.length })
-    toast.success(successMsg)
-  }, [t])
+    folders.forEach((folder, index) => {
+      setTimeout(() => {
+        void startFolderDownload(folder)
+      }, index * 200)
+    })
+
+    if (normalFiles.length > 0) {
+      const successMsg =
+        normalFiles.length === 1
+          ? t('operations.downloadOne')
+          : t('operations.downloadMany', { count: normalFiles.length })
+      toast.success(successMsg)
+    }
+  }, [buildDownloadParams, startFolderDownload, t])
 
   /**
    * 收藏/取消收藏
@@ -292,6 +525,7 @@ export function useFileOperations(
     sharingFiles,
     deletingFiles,
     detailFile,
+    folderDownloadTasks,
 
     // 操作方法
     openCreateFolderModal,
@@ -310,5 +544,6 @@ export function useFileOperations(
     handleFavorite,
     openPreview,
     openDetail,
+    dismissFolderDownloadTask,
   }
 }

@@ -51,6 +51,7 @@ import {
 } from './components'
 import UploadModal from './components/UploadModal'
 import UploadPanel from './components/UploadPanel'
+import FolderDownloadPanel from './components/FolderDownloadPanel'
 import { useFileList } from './hooks/useFileList'
 import { useFileOperations } from './hooks/useFileOperations'
 
@@ -240,12 +241,11 @@ export default function FilesPage() {
    * 批量操作
    */
   const handleBatchDownload = () => {
-    const downloadableFiles = selectedFiles.filter((f) => !f.isDir)
-    if (downloadableFiles.length === 0) {
+    if (selectedFiles.length === 0) {
       toast.warning(t('index.toastNoDownload'))
       return
     }
-    operations.handleDownload(downloadableFiles)
+    operations.handleDownload(selectedFiles)
     clearSelection()
   }
 
@@ -574,6 +574,12 @@ export default function FilesPage() {
 
       {/* 上传进度面板 */}
       <UploadPanel onSuccess={fileList.refresh} />
+
+      {/* 文件夹下载进度面板 */}
+      <FolderDownloadPanel
+        tasks={operations.folderDownloadTasks}
+        onDismiss={operations.dismissFolderDownloadTask}
+      />
 
       {/* 模态框 */}
       <CreateFolderModal

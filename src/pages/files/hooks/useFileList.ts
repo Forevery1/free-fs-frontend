@@ -16,7 +16,7 @@ import { getFileList, getFolderPath } from '@/api/file'
 import { useToolbarSearch } from '@/hooks/useToolbarSearch'
 
 /** 每页条数（与后端约定一致） */
-export const FILE_LIST_PAGE_SIZE = 100
+export const FILE_LIST_PAGE_SIZE = 50
 
 function mergeFileRecords(prev: FileItem[], incoming: FileItem[]): FileItem[] {
   const seen = new Set(prev.map((f) => f.id))

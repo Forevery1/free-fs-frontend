@@ -34,8 +34,20 @@
   },
   "table": {
     "colName": "Name",
+    "colType": "Type",
     "colSize": "Size",
-    "colModified": "Modified"
+    "colModified": "Modified",
+    "folderType": "Folder",
+    "unknownType": "Unknown"
+  },
+  "sort": {
+    "fieldAria": "Choose sort field",
+    "name": "Name",
+    "modified": "Modified",
+    "type": "Type",
+    "size": "Size",
+    "ascending": "Ascending",
+    "descending": "Descending"
   },
   "rowMenu": {
     "preview": "Preview",

@@ -11,6 +11,9 @@ import {
   Eye,
   Info,
   Loader2,
+  ArrowUp,
+  ArrowDown,
+  ChevronsUpDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatFileListDisplayTime, formatFileSize } from '@/utils/format'
@@ -60,6 +63,8 @@ interface FileListViewProps {
   selectedKeys: string[]
   onSelectionChange: (keys: string[]) => void
   onFileClick: (file: FileItem) => void
+  orderBy: string
+  orderDirection: SortOrder
   onSortChange: (field: string, direction: SortOrder) => void
   onDownload: (file: FileItem | FileItem[]) => void
   onShare: (file: FileItem) => void
@@ -88,6 +93,8 @@ export function FileListView({
   selectedKeys,
   onSelectionChange,
   onFileClick,
+  orderBy,
+  orderDirection,
   onSortChange,
   onDownload,
   onShare,
@@ -181,6 +188,29 @@ export function FileListView({
     }
   }
 
+  const handleHeaderSort = (field: string) => {
+    const nextDirection: SortOrder =
+      orderBy === field
+        ? orderDirection === 'ASC'
+          ? 'DESC'
+          : 'ASC'
+        : field === 'displayName' || field === 'suffix'
+          ? 'ASC'
+          : 'DESC'
+    onSortChange(field, nextDirection)
+  }
+
+  const renderSortIcon = (field: string) => {
+    if (orderBy !== field) {
+      return <ChevronsUpDown className='size-3.5 opacity-50' />
+    }
+    return orderDirection === 'ASC' ? (
+      <ArrowUp className='size-3.5' />
+    ) : (
+      <ArrowDown className='size-3.5' />
+    )
+  }
+
   const isAllSelected =
     fileList.length > 0 && selectedKeys.length === fileList.length
 
@@ -201,13 +231,52 @@ export function FileListView({
                 />
               </TableHead>
               <TableHead className='text-muted-foreground h-[48px] px-4 text-left text-sm font-medium'>
-                {t('table.colName')}
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='-ml-3 h-8 gap-1.5 px-3'
+                  onClick={() => handleHeaderSort('displayName')}
+                >
+                  {t('table.colName')}
+                  {renderSortIcon('displayName')}
+                </Button>
               </TableHead>
               <TableHead className='text-muted-foreground h-[48px] w-[7.5rem] px-4 text-left text-sm font-medium'>
-                {t('table.colSize')}
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='-ml-3 h-8 gap-1.5 px-3'
+                  onClick={() => handleHeaderSort('suffix')}
+                >
+                  {t('table.colType')}
+                  {renderSortIcon('suffix')}
+                </Button>
+              </TableHead>
+              <TableHead className='text-muted-foreground h-[48px] w-[7.5rem] px-4 text-left text-sm font-medium'>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='-ml-3 h-8 gap-1.5 px-3'
+                  onClick={() => handleHeaderSort('size')}
+                >
+                  {t('table.colSize')}
+                  {renderSortIcon('size')}
+                </Button>
               </TableHead>
               <TableHead className='text-muted-foreground h-[48px] min-w-[11rem] px-4 text-left text-sm font-medium'>
-                {t('table.colModified')}
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='-ml-3 h-8 gap-1.5 px-3'
+                  onClick={() => handleHeaderSort('updateTime')}
+                >
+                  {t('table.colModified')}
+                  {renderSortIcon('updateTime')}
+                </Button>
               </TableHead>
               <TableHead className='text-muted-foreground h-[48px] w-14 px-2 text-right text-sm font-medium'>
                 <span className='sr-only'>{t('list.ariaMore')}</span>
@@ -295,6 +364,11 @@ export function FileListView({
                           {file.displayName}
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell className='min-h-[48px] align-middle px-4 py-1.5 text-sm text-muted-foreground'>
+                      {file.isDir
+                        ? t('table.folderType')
+                        : file.suffix?.toUpperCase() || t('table.unknownType')}
                     </TableCell>
                     <TableCell
                       className={cn(

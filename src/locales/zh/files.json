@@ -34,8 +34,20 @@
   },
   "table": {
     "colName": "名称",
+    "colType": "类型",
     "colSize": "大小",
-    "colModified": "修改时间"
+    "colModified": "修改时间",
+    "folderType": "文件夹",
+    "unknownType": "未知"
+  },
+  "sort": {
+    "fieldAria": "选择排序字段",
+    "name": "按名称",
+    "modified": "按修改时间",
+    "type": "按类型",
+    "size": "按大小",
+    "ascending": "升序",
+    "descending": "降序"
   },
   "rowMenu": {
     "preview": "预览",

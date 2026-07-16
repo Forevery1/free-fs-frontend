@@ -276,6 +276,8 @@ export function useFileList() {
     refresh,
     updateFileItems,
     commitSearch,
+    orderBy,
+    orderDirection,
     handleSortChange,
   }
 }

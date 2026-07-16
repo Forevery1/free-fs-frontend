@@ -9,6 +9,9 @@ import {
   FolderPlus,
   FolderUp,
   RefreshCw,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from 'lucide-react'
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -34,6 +37,13 @@ import {
 } from '@/components/ui/empty'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Toolbar,
   FileBreadcrumb,
@@ -364,18 +374,69 @@ export default function FilesPage() {
               : t('index.totalCount', { total: fileList.total })}
           </span>
         </div>
-        <ToggleGroup
-          type='single'
-          value={viewMode}
-          onValueChange={(value) => value && setViewMode(value as ViewMode)}
-        >
-          <ToggleGroupItem value='grid' aria-label={t('index.ariaGrid')} size='sm'>
-            <LayoutGrid className='h-4 w-4' />
-          </ToggleGroupItem>
-          <ToggleGroupItem value='list' aria-label={t('index.ariaList')} size='sm'>
-            <List className='h-4 w-4' />
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <div className='flex items-center gap-2'>
+          <Select
+            value={fileList.orderBy}
+            onValueChange={(field) =>
+              fileList.handleSortChange(field, fileList.orderDirection)
+            }
+          >
+            <SelectTrigger
+              className='h-8 w-[8.75rem]'
+              size='sm'
+              aria-label={t('sort.fieldAria')}
+            >
+              <ArrowUpDown className='size-4 text-muted-foreground' />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='displayName'>{t('sort.name')}</SelectItem>
+              <SelectItem value='updateTime'>{t('sort.modified')}</SelectItem>
+              <SelectItem value='suffix'>{t('sort.type')}</SelectItem>
+              <SelectItem value='size'>{t('sort.size')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            className='size-8 shrink-0'
+            onClick={() =>
+              fileList.handleSortChange(
+                fileList.orderBy,
+                fileList.orderDirection === 'ASC' ? 'DESC' : 'ASC'
+              )
+            }
+            aria-label={
+              fileList.orderDirection === 'ASC'
+                ? t('sort.ascending')
+                : t('sort.descending')
+            }
+            title={
+              fileList.orderDirection === 'ASC'
+                ? t('sort.ascending')
+                : t('sort.descending')
+            }
+          >
+            {fileList.orderDirection === 'ASC' ? (
+              <ArrowUp className='size-4' />
+            ) : (
+              <ArrowDown className='size-4' />
+            )}
+          </Button>
+          <ToggleGroup
+            type='single'
+            value={viewMode}
+            onValueChange={(value) => value && setViewMode(value as ViewMode)}
+          >
+            <ToggleGroupItem value='grid' aria-label={t('index.ariaGrid')} size='sm'>
+              <LayoutGrid className='h-4 w-4' />
+            </ToggleGroupItem>
+            <ToggleGroupItem value='list' aria-label={t('index.ariaList')} size='sm'>
+              <List className='h-4 w-4' />
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
       </div>
 
       {/* 主内容区域 */}
@@ -465,6 +526,8 @@ export default function FilesPage() {
                       selectedKeys={selectedKeys}
                       onSelectionChange={setSelectedKeys}
                       onFileClick={handleFileClick}
+                      orderBy={fileList.orderBy}
+                      orderDirection={fileList.orderDirection}
                       onSortChange={fileList.handleSortChange}
                       onDownload={operations.handleDownload}
                       onShare={operations.openShareModal}

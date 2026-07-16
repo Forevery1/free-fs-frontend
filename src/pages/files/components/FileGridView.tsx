@@ -258,7 +258,7 @@ export function FileGridView({
                               : t('rowMenu.favorite')}
                           </DropdownMenuItem>
                         )}
-                        {!file.isDir && canRead && (
+                        {canRead && (
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation()
@@ -480,7 +480,7 @@ export function FileGridView({
                           : t('rowMenu.favorite')}
                       </ContextMenuItem>
                     )}
-                    {!file.isDir && canRead && (
+                    {canRead && (
                       <ContextMenuItem
                         onClick={(e) => {
                           e.stopPropagation()

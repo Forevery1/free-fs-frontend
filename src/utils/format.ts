@@ -63,7 +63,7 @@ function formatReadableStorageNumber(value: number): string {
   return value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
 }
 
-/** 首页存储概览：自动换算到更合适的单位，避免出现“2.44万 MB” */
+/** 首页存储容量：自动换算到更合适的单位，避免出现“2.44万 MB” */
 export function formatHomeStorageDisplay(
   value: number,
   unitLabel: string,

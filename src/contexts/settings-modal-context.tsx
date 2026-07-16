@@ -21,8 +21,6 @@ type SettingsModalValue = {
   tab: SettingsTab
   setTab: (tab: SettingsTab) => void
   openSettings: (tab?: SettingsTab) => void
-  inviteDialogRequest: number
-  openMemberInvite: () => void
 }
 
 const SettingsModalContext = createContext<SettingsModalValue | null>(null)
@@ -30,16 +28,9 @@ const SettingsModalContext = createContext<SettingsModalValue | null>(null)
 export function SettingsModalProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<SettingsTab>('profile')
-  const [inviteDialogRequest, setInviteDialogRequest] = useState(0)
 
   const openSettings = useCallback((next?: SettingsTab) => {
     if (next) setTab(next)
-    setOpen(true)
-  }, [])
-
-  const openMemberInvite = useCallback(() => {
-    setTab('members')
-    setInviteDialogRequest((request) => request + 1)
     setOpen(true)
   }, [])
 
@@ -50,10 +41,8 @@ export function SettingsModalProvider({ children }: { children: ReactNode }) {
       tab,
       setTab,
       openSettings,
-      inviteDialogRequest,
-      openMemberInvite,
     }),
-    [open, tab, openSettings, inviteDialogRequest, openMemberInvite]
+    [open, tab, openSettings]
   )
 
   return (

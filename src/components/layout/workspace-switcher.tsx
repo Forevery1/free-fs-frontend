@@ -32,7 +32,7 @@ export function WorkspaceSwitcher() {
   const navigate = useNavigate()
   const { isMobile, state } = useSidebar()
   const { activateWorkspace } = useAuth()
-  const { openSettings, openMemberInvite } = useSettingsModal()
+  const { openSettings } = useSettingsModal()
   const workspaces = useWorkspaceStore((s) => s.workspaces)
   const currentWorkspaceId = useWorkspaceStore((s) => s.currentWorkspaceId)
   const [switching, setSwitching] = useState(false)
@@ -124,7 +124,7 @@ export function WorkspaceSwitcher() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        openMemberInvite()
+                        openSettings('members')
                       }}
                       className='flex-1 flex items-center justify-center gap-2 h-8 px-3 text-xs rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors'
                     >

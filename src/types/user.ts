@@ -23,7 +23,8 @@ export interface UserInfo {
 }
 
 export interface LoginRes {
-  accessToken: string
+  id: string
+  username: string
 }
 
 /** 与登录接口一致:password 账号/邮箱+密码;email_code 邮箱+验证码(验证码走 password 字段) */

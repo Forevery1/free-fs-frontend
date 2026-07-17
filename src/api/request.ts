@@ -5,7 +5,7 @@ import axios, {
 } from 'axios'
 import { toast } from 'sonner'
 import i18n, { getRequestLangHeader } from '@/i18n'
-import { getToken, clearToken } from '@/utils/auth'
+import { clearAuthSession } from '@/utils/auth'
 import { getCurrentWorkspaceId } from '@/store/workspace'
 
 /** 与后端统一包装 `{ code, msg, data }` 一致 */
@@ -32,7 +32,7 @@ export function redirectToLoginDueToUnauthorized() {
   if (isRedirectingToLogin) return
   isRedirectingToLogin = true
 
-  clearToken()
+  clearAuthSession()
   localStorage.removeItem('userInfo')
   sessionStorage.removeItem('userInfo')
   localStorage.removeItem('current-storage-platform')
@@ -59,6 +59,7 @@ export function redirectToLoginDueToUnauthorized() {
 const service = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 10000,
+  withCredentials: true,
 })
 
 const getCurrentStoragePlatformId = (): string | null => {
@@ -76,12 +77,6 @@ const getCurrentStoragePlatformId = (): string | null => {
 
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = getToken()
-    if (token) {
-      config.headers = config.headers || {}
-      config.headers.Authorization = `Bearer ${token}`
-    }
-
     const platformId = getCurrentStoragePlatformId()
     if (platformId) {
       config.headers = config.headers || {}

@@ -1,25 +1,33 @@
-const TOKEN_KEY = 'accessToken'
+const AUTH_SESSION_KEY = 'authSession'
 
-export const getToken = (): string | null => {
-  // 优先从 localStorage 获取，如果没有则从 sessionStorage 获取
-  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY)
-}
-
-export const setToken = (token: string, remember: boolean = false): void => {
+/**
+ * 仅保存非敏感的登录状态标记。真正的认证凭据由后端写入 HttpOnly Cookie，
+ * 前端 JavaScript 无法读取，从而降低 XSS 窃取令牌的风险。
+ */
+export const setAuthSession = (remember: boolean = false): void => {
   if (remember) {
-    localStorage.setItem(TOKEN_KEY, token)
-    sessionStorage.removeItem(TOKEN_KEY)
+    localStorage.setItem(AUTH_SESSION_KEY, '1')
+    sessionStorage.removeItem(AUTH_SESSION_KEY)
   } else {
-    sessionStorage.setItem(TOKEN_KEY, token)
-    localStorage.removeItem(TOKEN_KEY)
+    sessionStorage.setItem(AUTH_SESSION_KEY, '1')
+    localStorage.removeItem(AUTH_SESSION_KEY)
   }
 }
 
-export const clearToken = (): void => {
-  localStorage.removeItem(TOKEN_KEY)
-  sessionStorage.removeItem(TOKEN_KEY)
+export const clearAuthSession = (): void => {
+  localStorage.removeItem(AUTH_SESSION_KEY)
+  sessionStorage.removeItem(AUTH_SESSION_KEY)
+  // 清理旧版本曾保存的明文令牌。
+  localStorage.removeItem('accessToken')
+  sessionStorage.removeItem('accessToken')
 }
 
-export const isLogin = (): boolean => {
-  return !!getToken()
+export const hasAuthSession = (): boolean => {
+  // 升级到 Cookie 认证后，不再保留旧版本的 Bearer Token。
+  localStorage.removeItem('accessToken')
+  sessionStorage.removeItem('accessToken')
+  return (
+    localStorage.getItem(AUTH_SESSION_KEY) === '1' ||
+    sessionStorage.getItem(AUTH_SESSION_KEY) === '1'
+  )
 }

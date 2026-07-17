@@ -62,7 +62,7 @@ interface TransferStore {
   cancelTask: (taskId: string) => Promise<void>
   retryTask: (taskId: string) => Promise<void>
   clearCompletedTasks: () => Promise<void>
-  initSSE: (userId: string) => Promise<void>
+  initSSE: () => Promise<void>
   disconnectSSE: () => void
   getDisplayData: (taskId: string) => {
     progress: number
@@ -856,7 +856,7 @@ export const useTransferStore = create<TransferStore>((set, get) => ({
     }
   },
 
-  initSSE: async (userId: string) => {
+  initSSE: async () => {
     try {
       await get().fetchTasks()
 
@@ -876,7 +876,7 @@ export const useTransferStore = create<TransferStore>((set, get) => ({
         get().setSseConnected(connected)
       })
 
-      sseService.connect(userId)
+      sseService.connect()
 
       get().checkAndStartPolling()
       get().setupBeforeUnloadWarning()

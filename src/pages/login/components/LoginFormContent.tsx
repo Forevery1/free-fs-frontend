@@ -6,7 +6,6 @@ import type { LoginParams, LoginType } from '@/types/user'
 import { User, Mail, Lock, KeyRound } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { setToken } from '@/utils/auth'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -112,14 +111,11 @@ export default function LoginFormContent({ onSwitchForm }: Props) {
 
     setLoading(true)
     try {
-      const res = await userApi.login(payload)
-      const { accessToken } = res
-
-      setToken(accessToken, isRemember)
+      await userApi.login(payload)
 
       const userInfo = await userApi.getUserInfo()
 
-      await login(accessToken, userInfo, isRemember)
+      await login(userInfo, isRemember)
 
       toast.success(t('toast.loginSuccess'))
       const next = getSafeRedirectPath(searchParams) ?? '/'

@@ -19,7 +19,6 @@ import {
   validateShareCode,
   getShareItemList,
 } from '@/api/share'
-import { getToken } from '@/utils/auth'
 import { getAvatarFallback } from '@/utils/avatar'
 import { openFilePreviewWithToken } from '@/utils/preview'
 import { getCurrentWorkspaceId } from '@/store/workspace'
@@ -208,12 +207,10 @@ export default function SharePage() {
   // 处理下载
   const handleDownload = (file: FileItem) => {
     try {
-      const token = getToken()
       const workspaceId = getCurrentWorkspaceId()
       
-      // 构建下载链接，将 token 和 workspaceId 放到 URL 参数中
+      // 认证凭据由 HttpOnly Cookie 自动携带，URL 中只保留工作空间上下文。
       const params = new URLSearchParams()
-      params.set('Authorization', `Bearer ${token}`)
       if (workspaceId) {
         params.set('X-Workspace-Id', workspaceId)
       }

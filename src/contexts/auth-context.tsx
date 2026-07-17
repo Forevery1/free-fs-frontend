@@ -5,7 +5,7 @@ import {
   useEffect,
   useCallback,
   useMemo,
-  ReactNode,
+  type ReactNode,
 } from 'react'
 import type { UserInfo } from '@/types/user'
 import { mergeUserInfo } from '@/utils/merge-user-info'
@@ -13,21 +13,16 @@ import { getActiveStoragePlatforms } from '@/api/storage'
 import { workspaceApi } from '@/api/workspace'
 import { useWorkspaceStore } from '@/store/workspace'
 import {
-  setToken as saveToken,
-  clearToken as removeToken,
-  getToken,
+  setAuthSession,
+  clearAuthSession,
+  hasAuthSession,
 } from '@/utils/auth'
 
 interface AuthContextType {
   isAuthenticated: boolean
   user: UserInfo | null
-  token: string | null
   needsWorkspaceSetup: boolean
-  login: (
-    token: string,
-    userInfo: UserInfo,
-    remember?: boolean
-  ) => Promise<void>
+  login: (userInfo: UserInfo, remember?: boolean) => Promise<void>
   logout: () => void
   updateUser: (patch: Partial<UserInfo>) => void
   /** 加载工作空间列表（不激活） */
@@ -46,7 +41,6 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState<UserInfo | null>(null)
-  const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [needsWorkspaceSetup, setNeedsWorkspaceSetup] = useState(false)
 
@@ -113,9 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const storedToken = getToken()
-
-        if (storedToken) {
+        if (hasAuthSession()) {
           const { useUserStore } = await import('@/store/user')
           const userStore = useUserStore.getState()
 
@@ -143,7 +135,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
 
           if (userInfo) {
-            setToken(storedToken)
             setUser(userInfo)
             setIsAuthenticated(true)
             await loadWorkspaces()
@@ -151,7 +142,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } catch (error) {
         console.error('初始化认证信息失败:', error)
-        removeToken()
+        clearAuthSession()
       } finally {
         setIsLoading(false)
       }
@@ -161,10 +152,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [loadWorkspaces])
 
   const login = useCallback(
-    async (accessToken: string, userInfo: UserInfo, remember = false) => {
+    async (userInfo: UserInfo, remember = false) => {
       try {
-        saveToken(accessToken, remember)
-        setToken(accessToken)
+        setAuthSession(remember)
         setUser(userInfo)
         setIsAuthenticated(true)
 
@@ -182,12 +172,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   )
 
   const logout = useCallback(() => {
-    setToken(null)
+    void import('@/api/user').then(({ userApi }) => userApi.logout()).catch(() => {})
     setUser(null)
     setIsAuthenticated(false)
     setNeedsWorkspaceSetup(false)
 
-    removeToken()
+    clearAuthSession()
     localStorage.removeItem('current-storage-platform')
 
     import('@/store/user').then(({ useUserStore }) => {
@@ -214,7 +204,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     () => ({
       isAuthenticated,
       user,
-      token,
       needsWorkspaceSetup,
       login,
       logout,
@@ -226,7 +215,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [
       isAuthenticated,
       user,
-      token,
       needsWorkspaceSetup,
       login,
       logout,

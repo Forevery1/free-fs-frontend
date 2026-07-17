@@ -28,7 +28,7 @@ export function useSSEConnection() {
         disconnectSSE()
       }
 
-      initSSE(user.id)
+      initSSE()
       isInitializedRef.current = true
       contextRef.current = contextKey
     }
@@ -40,7 +40,14 @@ export function useSSEConnection() {
         contextRef.current = null
       }
     }
-  }, [isAuthenticated, user?.id, currentWorkspaceId, currentRole])
+  }, [
+    isAuthenticated,
+    user?.id,
+    currentWorkspaceId,
+    currentRole,
+    initSSE,
+    disconnectSSE,
+  ])
 
   return { sseConnected }
 }

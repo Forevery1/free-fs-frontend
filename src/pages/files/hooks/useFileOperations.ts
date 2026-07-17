@@ -281,14 +281,8 @@ export function useFileOperations(
   )
 
   const buildDownloadParams = useCallback(() => {
-    const token =
-      localStorage.getItem('accessToken') ||
-      sessionStorage.getItem('accessToken')
     const workspaceId = getCurrentWorkspaceId()
     const params = new URLSearchParams()
-    if (token) {
-      params.set('Authorization', `Bearer ${token}`)
-    }
     if (workspaceId) {
       params.set('X-Workspace-Id', workspaceId)
     }

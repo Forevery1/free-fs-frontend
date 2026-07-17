@@ -1,11 +1,14 @@
 import type {
+  SSECompleteData,
+  SSEErrorData,
   SSEMessage,
   SSEMessageType,
   SSEProgressData,
   SSEStatusData,
-  SSECompleteData,
-  SSEErrorData,
 } from '@/types/transfer'
+import { redirectToLoginDueToUnauthorized } from '@/api/request'
+import { getRequestLangHeader } from '@/i18n'
+import { getCurrentWorkspaceId } from '@/store/workspace'
 
 export type SSEMessageHandler = (message: SSEMessage) => void
 export type SSEConnectionHandler = (connected: boolean) => void
@@ -55,12 +58,14 @@ function parseErrorData(data: Record<string, unknown>): SSEErrorData {
 
 class SSEService {
   private static instance: SSEService | null = null
-  private eventSource: EventSource | null = null
-  private currentUserId: string | null = null
+  private abortController: AbortController | null = null
+  private reconnectTimer: number | null = null
   private messageHandlers: Set<SSEMessageHandler> = new Set()
   private connectionHandlers: Set<SSEConnectionHandler> = new Set()
   private config: SSEServiceConfig
   private connected = false
+  private shouldReconnect = false
+  private connectionGeneration = 0
   private onReconnectSync: (() => Promise<void>) | null = null
   private reconnectAttempts = 0
   private readonly MAX_RECONNECT_ATTEMPTS = 5
@@ -77,35 +82,27 @@ class SSEService {
     return SSEService.instance
   }
 
-  public connect(userId: string): void {
-    if (this.eventSource && this.currentUserId === userId) {
-      return
-    }
+  public connect(): void {
+    if (this.abortController) return
 
-    if (this.eventSource) {
-      this.disconnect()
-    }
-
-    this.currentUserId = userId
-
-    const url = `${this.config.baseUrl}${this.config.endpoint}?userId=${encodeURIComponent(userId)}`
-
-    try {
-      this.eventSource = new EventSource(url)
-      this.setupEventListeners()
-    } catch (error) {
-      console.error('SSE 连接失败:', error)
-      this.setConnected(false)
-    }
+    this.shouldReconnect = true
+    this.connectionGeneration += 1
+    void this.openConnection(this.connectionGeneration)
   }
 
   public disconnect(): void {
-    if (this.eventSource) {
-      this.eventSource.close()
-      this.eventSource = null
-      this.currentUserId = null
-      this.setConnected(false)
+    this.shouldReconnect = false
+    this.connectionGeneration += 1
+
+    if (this.reconnectTimer !== null) {
+      window.clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
     }
+
+    this.abortController?.abort()
+    this.abortController = null
+    this.reconnectAttempts = 0
+    this.setConnected(false)
   }
 
   public isConnected(): boolean {
@@ -130,10 +127,152 @@ class SSEService {
     this.onReconnectSync = callback
   }
 
+  private async openConnection(generation: number): Promise<void> {
+    const workspaceId = getCurrentWorkspaceId()
+    if (!workspaceId || generation !== this.connectionGeneration) return
+
+    const controller = new AbortController()
+    this.abortController = controller
+
+    try {
+      const response = await fetch(
+        `${this.config.baseUrl}${this.config.endpoint}`,
+        {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            Accept: 'text/event-stream',
+            'X-Workspace-Id': workspaceId,
+            lang: getRequestLangHeader(),
+          },
+          cache: 'no-store',
+          signal: controller.signal,
+        }
+      )
+
+      if (response.status === 401) {
+        this.shouldReconnect = false
+        redirectToLoginDueToUnauthorized()
+        return
+      }
+      if (!response.ok || !response.body) {
+        throw new Error(`SSE request failed with status ${response.status}`)
+      }
+
+      const contentType = response.headers.get('content-type') || ''
+      if (!contentType.includes('text/event-stream')) {
+        if (contentType.includes('application/json')) {
+          const result = (await response.json()) as { code?: number }
+          if (result.code === 401) {
+            this.shouldReconnect = false
+            redirectToLoginDueToUnauthorized()
+            return
+          }
+        }
+        throw new Error(`Unexpected SSE content type: ${contentType || 'unknown'}`)
+      }
+
+      this.reconnectAttempts = 0
+      this.setConnected(true)
+      await this.consumeStream(response.body, generation)
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return
+    } finally {
+      if (this.abortController === controller) {
+        this.abortController = null
+      }
+      if (generation === this.connectionGeneration) {
+        this.setConnected(false)
+        this.scheduleReconnect(generation)
+      }
+    }
+  }
+
+  private async consumeStream(
+    stream: ReadableStream<Uint8Array>,
+    generation: number
+  ): Promise<void> {
+    const reader = stream.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    try {
+      while (generation === this.connectionGeneration) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n')
+        let boundary = buffer.indexOf('\n\n')
+        while (boundary !== -1) {
+          this.handleEventBlock(buffer.slice(0, boundary))
+          buffer = buffer.slice(boundary + 2)
+          boundary = buffer.indexOf('\n\n')
+        }
+      }
+
+      buffer += decoder.decode()
+      if (buffer.trim()) {
+        this.handleEventBlock(buffer)
+      }
+    } finally {
+      reader.releaseLock()
+    }
+  }
+
+  private handleEventBlock(block: string): void {
+    let eventType: string | undefined
+    const dataLines: string[] = []
+
+    for (const line of block.split('\n')) {
+      if (!line || line.startsWith(':')) continue
+
+      const separator = line.indexOf(':')
+      const field = separator === -1 ? line : line.slice(0, separator)
+      let value = separator === -1 ? '' : line.slice(separator + 1)
+      if (value.startsWith(' ')) value = value.slice(1)
+
+      if (field === 'event') eventType = value
+      if (field === 'data') dataLines.push(value)
+    }
+
+    if (dataLines.length === 0) return
+
+    try {
+      const rawData = JSON.parse(dataLines.join('\n')) as Record<string, unknown>
+      const type = (eventType || rawData.type) as SSEMessageType | undefined
+      if (!type) return
+
+      const message = this.parseMessage(type, rawData)
+      if (message) this.dispatchMessage(message)
+    } catch {
+      // Ignore malformed or heartbeat events.
+    }
+  }
+
+  private scheduleReconnect(generation: number): void {
+    if (
+      !this.shouldReconnect ||
+      generation !== this.connectionGeneration ||
+      this.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS
+    ) {
+      return
+    }
+
+    this.reconnectAttempts += 1
+    const delay = this.RECONNECT_BASE_DELAY * this.reconnectAttempts
+    this.reconnectTimer = window.setTimeout(() => {
+      this.reconnectTimer = null
+      if (this.shouldReconnect && generation === this.connectionGeneration) {
+        void this.openConnection(generation)
+      }
+    }, delay)
+  }
+
   private setConnected(connected: boolean): void {
     const wasConnected = this.connected
-    this.connected = connected
+    if (wasConnected === connected) return
 
+    this.connected = connected
     this.connectionHandlers.forEach((handler) => {
       try {
         handler(connected)
@@ -143,7 +282,7 @@ class SSEService {
     })
 
     if (!wasConnected && connected && this.config.syncOnReconnect) {
-      this.triggerReconnectSync()
+      void this.triggerReconnectSync()
     }
   }
 
@@ -154,86 +293,6 @@ class SSEService {
       } catch {
         // Silent
       }
-    }
-  }
-
-  private setupEventListeners(): void {
-    if (!this.eventSource) return
-
-    this.eventSource.onopen = () => {
-      this.reconnectAttempts = 0
-      this.setConnected(true)
-    }
-
-    this.eventSource.onerror = (error) => {
-      console.error('SSE 连接错误:', error)
-
-      if (this.eventSource?.readyState === EventSource.CLOSED) {
-        this.setConnected(false)
-
-        if (this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
-          this.reconnectAttempts += 1
-          const delay = this.RECONNECT_BASE_DELAY * this.reconnectAttempts
-
-          setTimeout(() => {
-            if (this.currentUserId) {
-              this.connect(this.currentUserId)
-            }
-          }, delay)
-        }
-      }
-    }
-
-    this.eventSource.addEventListener('progress', (event) => {
-      this.handleEvent('progress', event)
-    })
-
-    this.eventSource.addEventListener('status', (event) => {
-      this.handleEvent('status', event)
-    })
-
-    this.eventSource.addEventListener('complete', (event) => {
-      this.handleEvent('complete', event)
-    })
-
-    this.eventSource.addEventListener('error', (event) => {
-      if (event instanceof MessageEvent) {
-        this.handleEvent('error', event)
-      }
-    })
-
-    this.eventSource.onmessage = (event) => {
-      this.handleGenericMessage(event)
-    }
-  }
-
-  private handleEvent(type: SSEMessageType, event: Event): void {
-    if (!(event instanceof MessageEvent)) return
-
-    try {
-      const rawData = JSON.parse(event.data)
-      const message = this.parseMessage(type, rawData)
-
-      if (message) {
-        this.dispatchMessage(message)
-      }
-    } catch {
-      // Silent
-    }
-  }
-
-  private handleGenericMessage(event: MessageEvent): void {
-    try {
-      const rawData = JSON.parse(event.data)
-
-      if (rawData.type && rawData.taskId) {
-        const message = this.parseMessage(rawData.type, rawData)
-        if (message) {
-          this.dispatchMessage(message)
-        }
-      }
-    } catch {
-      // Silent
     }
   }
 

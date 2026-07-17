@@ -154,7 +154,11 @@ export default function SharePage() {
   // 处理文件点击
   const handleFileClick = (file: FileItem) => {
     if (file.isDir) {
-      setBreadcrumbs([...breadcrumbs, { name: file.originalName, id: file.id }])
+      if (parentId === file.id) return
+      setBreadcrumbs((current) => {
+        if (current.at(-1)?.id === file.id) return current
+        return [...current, { name: file.originalName, id: file.id }]
+      })
       const params = new URLSearchParams(searchParams)
       params.set('parentId', file.id)
       params.set('viewMode', viewMode)

@@ -3,7 +3,11 @@
     "enterCode": "请输入提取码",
     "codeWrong": "提取码错误",
     "downloadStart": "开始下载文件",
-    "downloadFail": "下载失败，请稍后重试"
+    "downloadFail": "下载失败，请稍后重试",
+    "folderPreparing": "正在准备下载 {{name}}",
+    "folderTaskFail": "创建文件夹下载任务失败",
+    "folderPackFail": "文件夹打包失败",
+    "folderDownloadStart": "已交给浏览器下载 {{name}}"
   },
   "errors": {
     "network": "网络连接失败，请检查网络",
@@ -51,10 +55,22 @@
   },
   "fileList": {
     "name": "文件名",
+    "type": "类型",
     "size": "大小",
     "modified": "修改时间",
     "actions": "操作",
     "preview": "预览",
-    "download": "下载"
+    "download": "下载",
+    "folderType": "文件夹",
+    "unknownType": "未知"
+  },
+  "sort": {
+    "fieldAria": "选择排序字段",
+    "name": "按名称",
+    "modified": "按修改时间",
+    "type": "按类型",
+    "size": "按大小",
+    "ascending": "升序",
+    "descending": "降序"
   }
 }

@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios'
 import type { FileItem } from '@/types/file'
 import type { PageRecord } from '@/types/page'
 import type {
@@ -9,8 +10,14 @@ import type {
   ShareValidParams,
   ShareAccessRecord,
 } from '@/types/share'
-import { request } from './request'
-import service from './request'
+import type { FolderDownloadTaskVO } from '@/types/transfer'
+import service, { request } from './request'
+
+const silentRequestConfig: AxiosRequestConfig & {
+  showErrorMessage: boolean
+} = {
+  showErrorMessage: false,
+}
 
 /**
  * 分页获取我的分享列表
@@ -86,4 +93,28 @@ export function downloadShareFile(shareId: string, fileId: string) {
   return service.get(`/apis/share/${shareId}/download/${fileId}`, {
     responseType: 'blob',
   })
+}
+
+/**
+ * 创建分享文件夹下载打包任务
+ */
+export function createShareFolderDownloadTask(
+  shareId: string,
+  folderId: string
+) {
+  return request.post<FolderDownloadTaskVO>(
+    `/apis/share/${shareId}/folder-download/tasks/${folderId}`,
+    null,
+    { timeout: 0 }
+  )
+}
+
+/**
+ * 查询分享文件夹下载打包进度
+ */
+export function getShareFolderDownloadTask(shareId: string, taskId: string) {
+  return request.get<FolderDownloadTaskVO>(
+    `/apis/share/${shareId}/folder-download/tasks/${taskId}`,
+    silentRequestConfig
+  )
 }

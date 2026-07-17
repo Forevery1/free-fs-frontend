@@ -3,7 +3,11 @@
     "enterCode": "Enter the access code",
     "codeWrong": "Invalid access code",
     "downloadStart": "Download started",
-    "downloadFail": "Download failed. Try again later."
+    "downloadFail": "Download failed. Try again later.",
+    "folderPreparing": "Preparing {{name}} for download",
+    "folderTaskFail": "Could not create the folder download task",
+    "folderPackFail": "Could not package the folder",
+    "folderDownloadStart": "Browser download started for {{name}}"
   },
   "errors": {
     "network": "Network error. Check your connection.",
@@ -51,10 +55,22 @@
   },
   "fileList": {
     "name": "Name",
+    "type": "Type",
     "size": "Size",
     "modified": "Modified",
     "actions": "Actions",
     "preview": "Preview",
-    "download": "Download"
+    "download": "Download",
+    "folderType": "Folder",
+    "unknownType": "Unknown"
+  },
+  "sort": {
+    "fieldAria": "Select sort field",
+    "name": "By name",
+    "modified": "By modified time",
+    "type": "By type",
+    "size": "By size",
+    "ascending": "Ascending",
+    "descending": "Descending"
   }
 }

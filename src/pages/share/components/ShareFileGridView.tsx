@@ -1,6 +1,6 @@
-import { useTranslation } from 'react-i18next'
 import type { FileItem } from '@/types/file'
 import { Eye, Download, MoreVertical } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { formatFileTime } from '@/utils/format'
 import { Button } from '@/components/ui/button'
@@ -51,50 +51,50 @@ export function ShareFileGridView({
             onDoubleClick={() => handleDoubleClick(file)}
           >
             {/* 更多操作 */}
-            {!file.isDir &&
-              (hasPreviewPermission() || hasDownloadPermission()) && (
-                <div className='absolute top-2 right-2 z-10 opacity-0 transition-opacity group-hover:opacity-100'>
-                  <DropdownMenu modal={false}>
-                    <DropdownMenuTrigger
-                      asChild
+            {((!file.isDir && hasPreviewPermission()) ||
+              hasDownloadPermission()) && (
+              <div className='absolute top-2 right-2 z-10 opacity-0 transition-opacity group-hover:opacity-100'>
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger
+                    asChild
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='h-7 w-7 bg-background/95 shadow-sm backdrop-blur-sm hover:scale-105 hover:bg-background hover:shadow-md'
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Button
-                        variant='ghost'
-                        size='icon'
-                        className='h-7 w-7 bg-background/95 shadow-sm backdrop-blur-sm hover:scale-105 hover:bg-background hover:shadow-md'
-                        onClick={(e) => e.stopPropagation()}
+                      <MoreVertical className='h-4 w-4' />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align='end'>
+                    {!file.isDir && hasPreviewPermission() && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onPreview(file)
+                        }}
                       >
-                        <MoreVertical className='h-4 w-4' />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align='end'>
-                      {hasPreviewPermission() && (
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onPreview(file)
-                          }}
-                        >
-                          <Eye className='mr-2 h-4 w-4' />
-                          {t('fileList.preview')}
-                        </DropdownMenuItem>
-                      )}
-                      {hasDownloadPermission() && (
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onDownload(file)
-                          }}
-                        >
-                          <Download className='mr-2 h-4 w-4' />
-                          {t('fileList.download')}
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              )}
+                        <Eye className='mr-2 h-4 w-4' />
+                        {t('fileList.preview')}
+                      </DropdownMenuItem>
+                    )}
+                    {hasDownloadPermission() && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onDownload(file)
+                        }}
+                      >
+                        <Download className='mr-2 h-4 w-4' />
+                        {t('fileList.download')}
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
 
             {/* 文件图标 */}
             <div className='mb-3 flex h-20 items-center justify-center pt-1'>

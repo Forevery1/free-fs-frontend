@@ -43,6 +43,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { FileIcon } from '@/components/file-icon'
+import { GifThumbnail } from '@/components/gif-thumbnail'
 import { useFileDragDrop } from '../hooks/useFileDragDrop'
 import { FileListScrollSentinel } from './FileListScrollSentinel'
 
@@ -335,7 +336,15 @@ export function FileListView({
                     <TableCell className='min-h-[48px] align-middle px-4 py-1.5'>
                       <div className='flex min-w-0 items-center gap-2'>
                         <div className='flex size-8 shrink-0 items-center justify-center rounded-md bg-muted/40'>
-                          {file.thumbnailUrl ? (
+                          {file.thumbnailUrl && file.suffix?.toLowerCase() === 'gif' ? (
+                            <GifThumbnail
+                              src={file.thumbnailUrl}
+                              alt={file.displayName}
+                              className='size-7 rounded'
+                              width={56}
+                              height={56}
+                            />
+                          ) : file.thumbnailUrl ? (
                             <img
                               src={file.thumbnailUrl}
                               alt={file.displayName}

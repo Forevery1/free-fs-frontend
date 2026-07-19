@@ -268,7 +268,7 @@ export default function SharePage() {
 
   // 处理预览
   const handlePreview = async (file: FileItem) => {
-    await openFilePreviewWithToken(file.id, import.meta.env.VITE_API_BASE_URL)
+    await openFilePreviewWithToken(file, import.meta.env.VITE_API_BASE_URL, sortedFileList)
   }
 
   const handleSortChange = (field: string, direction: SortOrder) => {

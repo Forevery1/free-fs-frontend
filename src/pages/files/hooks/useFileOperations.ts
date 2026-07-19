@@ -484,8 +484,8 @@ export function useFileOperations(
   /**
    * 预览文件
    */
-  const openPreview = useCallback(async (file: FileItem) => {
-    await openFilePreviewWithToken(file.id, import.meta.env.VITE_API_BASE_URL)
+  const openPreview = useCallback(async (file: FileItem, navigationFiles: FileItem[] = []) => {
+    await openFilePreviewWithToken(file, import.meta.env.VITE_API_BASE_URL, navigationFiles)
   }, [])
 
   /**

@@ -509,7 +509,7 @@ export default function FilesPage() {
                       onMove={operations.openMoveModal}
                       onMoveFiles={handleMoveFiles}
                       onFavorite={operations.handleFavorite}
-                      onPreview={operations.openPreview}
+                      onPreview={(file) => operations.openPreview(file, fileList.fileList)}
                       onDetail={operations.openDetail}
                       onDragStateChange={handleDragStateChange}
                       onBatchShare={handleBatchShare}
@@ -536,7 +536,7 @@ export default function FilesPage() {
                       onMove={operations.openMoveModal}
                       onMoveFiles={handleMoveFiles}
                       onFavorite={operations.handleFavorite}
-                      onPreview={operations.openPreview}
+                      onPreview={(file) => operations.openPreview(file, fileList.fileList)}
                       onDetail={operations.openDetail}
                       onDragStateChange={handleDragStateChange}
                       onBatchShare={handleBatchShare}

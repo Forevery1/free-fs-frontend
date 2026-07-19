@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { FileIcon } from '@/components/file-icon'
+import { GifThumbnail } from '@/components/gif-thumbnail'
 import { useFileDragDrop } from '../hooks/useFileDragDrop'
 import { FileListScrollSentinel } from './FileListScrollSentinel'
 
@@ -322,7 +323,13 @@ export function FileGridView({
 
                   {/* 缩略图 95×75；文件夹同宽，略增高以容纳 Folder 顶部标签（勿 overflow-hidden） */}
                   <div className='mb-3 flex min-h-[90px] items-center justify-center overflow-visible pt-1'>
-                    {file.thumbnailUrl ? (
+                    {file.thumbnailUrl && file.suffix?.toLowerCase() === 'gif' ? (
+                      <GifThumbnail
+                        src={file.thumbnailUrl}
+                        alt={file.displayName}
+                        className='h-[75px] w-[95px] shrink-0 rounded-md shadow-sm transition-transform group-hover:scale-[1.02]'
+                      />
+                    ) : file.thumbnailUrl ? (
                       <div className='h-[75px] w-[95px] shrink-0 overflow-hidden rounded-md shadow-sm transition-transform group-hover:scale-[1.02]'>
                         <img
                           src={file.thumbnailUrl}

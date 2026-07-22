@@ -98,7 +98,7 @@ function buildNavConfig(
           title: t('nav.logs'),
           tab: 'logs',
           icon: { line: ScrollText, fill: ScrollText },
-          permission: 'member:manage',
+          permission: 'log:read',
         },
       ],
     },
@@ -152,7 +152,7 @@ function SettingsPanel({ tab }: { tab: SettingsTab }) {
         <NoPermission />
       )
     case 'logs':
-      return hasPermission('member:manage') ? (
+      return hasPermission('log:read') ? (
         <SettingsLogs />
       ) : (
         <NoPermission />

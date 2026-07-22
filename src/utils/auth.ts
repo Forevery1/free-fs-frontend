@@ -17,6 +17,8 @@ export const setAuthSession = (remember: boolean = false): void => {
 export const clearAuthSession = (): void => {
   localStorage.removeItem(AUTH_SESSION_KEY)
   sessionStorage.removeItem(AUTH_SESSION_KEY)
+  // 文件复制剪贴板属于当前登录会话，退出后不能带给下一个账号。
+  localStorage.removeItem('free-fs-file-copy-clipboard')
   // 清理旧版本曾保存的明文令牌。
   localStorage.removeItem('accessToken')
   sessionStorage.removeItem('accessToken')

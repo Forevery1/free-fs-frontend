@@ -5,7 +5,21 @@ import type { FileItem } from '@/types/file'
 
 const PREVIEW_NAVIGATION_PREFIX = 'free-fs-preview-navigation:'
 const IMAGE_SUFFIXES = new Set(['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'])
-const VIDEO_SUFFIXES = new Set(['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv', 'webm'])
+const VIDEO_SUFFIXES = new Set([
+  'mp4',
+  'm4v',
+  'avi',
+  'mkv',
+  'mov',
+  'wmv',
+  'flv',
+  'webm',
+  '3gp',
+  'ts',
+  'mts',
+  'm2ts',
+  'ogv',
+])
 
 function getPreviewCategory(file: FileItem): 'image' | 'video' | null {
   const suffix = file.suffix?.toLowerCase() || ''

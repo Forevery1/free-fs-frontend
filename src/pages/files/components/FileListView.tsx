@@ -14,6 +14,7 @@ import {
   ArrowUp,
   ArrowDown,
   ChevronsUpDown,
+  Copy,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatFileListDisplayTime, formatFileSize } from '@/utils/format'
@@ -68,6 +69,7 @@ interface FileListViewProps {
   orderDirection: SortOrder
   onSortChange: (field: string, direction: SortOrder) => void
   onDownload: (file: FileItem | FileItem[]) => void
+  onCopy: (file: FileItem | FileItem[]) => void
   onShare: (file: FileItem) => void
   onDelete: (file: FileItem) => void
   onRename: (file: FileItem) => void
@@ -81,6 +83,7 @@ interface FileListViewProps {
     draggedCount: number
   ) => void
   onBatchShare?: (files: FileItem[]) => void
+  onBatchCopy?: (files: FileItem[]) => void
   onBatchMove?: (files: FileItem[]) => void
   onBatchDelete?: (files: FileItem[]) => void
   hasMore?: boolean
@@ -98,6 +101,7 @@ export function FileListView({
   orderDirection,
   onSortChange,
   onDownload,
+  onCopy,
   onShare,
   onDelete,
   onRename,
@@ -108,6 +112,7 @@ export function FileListView({
   onDetail,
   onDragStateChange,
   onBatchShare,
+  onBatchCopy,
   onBatchMove,
   onBatchDelete,
   hasMore = false,
@@ -459,6 +464,17 @@ export function FileListView({
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation()
+                                onCopy(file)
+                              }}
+                            >
+                              <Copy className='size-4' />
+                              {t('rowMenu.copy')}
+                            </DropdownMenuItem>
+                          )}
+                          {canWrite && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
                                 onMove(file)
                               }}
                             >
@@ -537,6 +553,17 @@ export function FileListView({
                         >
                           <Download className='mr-2 h-4 w-4' />
                           {t('rowMenu.download')}
+                        </ContextMenuItem>
+                      )}
+                      {canWrite && onBatchCopy && selectedFiles.length > 0 && (
+                        <ContextMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onBatchCopy(selectedFiles)
+                          }}
+                        >
+                          <Copy className='mr-2 h-4 w-4' />
+                          {t('rowMenu.copy')}
                         </ContextMenuItem>
                       )}
                       {canShare && onBatchShare && (
@@ -647,6 +674,17 @@ export function FileListView({
                         >
                           <Download className='mr-2 h-4 w-4' />
                           {t('rowMenu.download')}
+                        </ContextMenuItem>
+                      )}
+                      {canWrite && (
+                        <ContextMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onCopy(file)
+                          }}
+                        >
+                          <Copy className='mr-2 h-4 w-4' />
+                          {t('rowMenu.copy')}
                         </ContextMenuItem>
                       )}
                       {canWrite && <ContextMenuSeparator />}

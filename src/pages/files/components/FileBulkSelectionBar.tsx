@@ -6,6 +6,7 @@ import {
   Heart,
   Move,
   Trash2,
+  Copy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BulkSelectionBar } from '@/components/bulk-selection-bar'
@@ -20,6 +21,7 @@ interface FileBulkSelectionBarProps {
   selectedCount: number
   hasUnfavorited: boolean
   onDownload: () => void
+  onCopy: () => void
   onRename: () => void
   onShare: () => void
   onFavorite: () => void
@@ -32,6 +34,7 @@ export function FileBulkSelectionBar({
   selectedCount,
   hasUnfavorited,
   onDownload,
+  onCopy,
   onRename,
   onShare,
   onFavorite,
@@ -62,6 +65,26 @@ export function FileBulkSelectionBar({
           </TooltipTrigger>
           <TooltipContent>
             <p>{t('rowMenu.download')}</p>
+          </TooltipContent>
+        </Tooltip>
+      </RequirePermission>
+
+      <RequirePermission code='file:write'>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type='button'
+              variant='outline'
+              size='icon'
+              className='size-8 shrink-0'
+              onClick={onCopy}
+              aria-label={t('bulk.ariaCopy')}
+            >
+              <Copy />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{t('rowMenu.copy')}</p>
           </TooltipContent>
         </Tooltip>
       </RequirePermission>

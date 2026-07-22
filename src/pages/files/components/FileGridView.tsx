@@ -12,6 +12,7 @@ import {
   Eye,
   Info,
   Loader2,
+  Copy,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatTime } from '@/utils/format'
@@ -42,6 +43,7 @@ interface FileGridViewProps {
   onSelectionChange: (keys: string[]) => void
   onFileClick: (file: FileItem) => void
   onDownload: (file: FileItem | FileItem[]) => void
+  onCopy: (file: FileItem | FileItem[]) => void
   onShare: (file: FileItem) => void
   onDelete: (file: FileItem) => void
   onRename: (file: FileItem) => void
@@ -55,6 +57,7 @@ interface FileGridViewProps {
     draggedCount: number
   ) => void
   onBatchShare?: (files: FileItem[]) => void
+  onBatchCopy?: (files: FileItem[]) => void
   onBatchMove?: (files: FileItem[]) => void
   onBatchDelete?: (files: FileItem[]) => void
   hasMore?: boolean
@@ -70,6 +73,7 @@ export function FileGridView({
   onSelectionChange,
   onFileClick,
   onDownload,
+  onCopy,
   onShare,
   onDelete,
   onRename,
@@ -80,6 +84,7 @@ export function FileGridView({
   onDetail,
   onDragStateChange,
   onBatchShare,
+  onBatchCopy,
   onBatchMove,
   onBatchDelete,
   hasMore = false,
@@ -270,6 +275,17 @@ export function FileGridView({
                             {t('rowMenu.download')}
                           </DropdownMenuItem>
                         )}
+                        {canWrite && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onCopy(file)
+                            }}
+                          >
+                            <Copy className='mr-2 h-4 w-4' />
+                            {t('rowMenu.copy')}
+                          </DropdownMenuItem>
+                        )}
                         {canWrite && <DropdownMenuSeparator />}
                         {canWrite && (
                           <DropdownMenuItem
@@ -388,6 +404,17 @@ export function FileGridView({
                         {t('rowMenu.download')}
                       </ContextMenuItem>
                     )}
+                    {canWrite && onBatchCopy && selectedFiles.length > 0 && (
+                      <ContextMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onBatchCopy(selectedFiles)
+                        }}
+                      >
+                        <Copy className='mr-2 h-4 w-4' />
+                        {t('rowMenu.copy')}
+                      </ContextMenuItem>
+                    )}
                     {canShare && onBatchShare && (
                       <ContextMenuItem
                         onClick={(e) => {
@@ -496,6 +523,17 @@ export function FileGridView({
                       >
                         <Download className='mr-2 h-4 w-4' />
                         {t('rowMenu.download')}
+                      </ContextMenuItem>
+                    )}
+                    {canWrite && (
+                      <ContextMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onCopy(file)
+                        }}
+                      >
+                        <Copy className='mr-2 h-4 w-4' />
+                        {t('rowMenu.copy')}
                       </ContextMenuItem>
                     )}
                     {canWrite && <ContextMenuSeparator />}

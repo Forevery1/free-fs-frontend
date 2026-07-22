@@ -7,6 +7,7 @@ import {
   deleteFiles,
   renameFile,
   moveFiles,
+  copyFiles,
   createFolder,
   favoriteFile,
   unfavoriteFile,
@@ -16,14 +17,60 @@ import {
   getFolderDownloadTask,
 } from '@/api/transfer'
 import { openFilePreviewWithToken } from '@/utils/preview'
-import { getCurrentWorkspaceId } from '@/store/workspace'
+import { getCurrentWorkspaceId, useWorkspaceStore } from '@/store/workspace'
 
 export type FolderDownloadPanelTask = FolderDownloadTaskVO & {
   downloadStarted?: boolean
 }
 
 const FOLDER_DOWNLOAD_STORAGE_KEY = 'free-fs-folder-download-tasks'
+const FILE_COPY_CLIPBOARD_STORAGE_KEY = 'free-fs-file-copy-clipboard'
 const FOLDER_DOWNLOAD_START_GAP_MS = 1500
+
+type FileCopyClipboard = {
+  workspaceId: string
+  items: Array<Pick<FileItem, 'id' | 'displayName' | 'isDir'>>
+  copiedAt: number
+}
+
+function readFileCopyClipboard(): FileCopyClipboard | null {
+  try {
+    const raw = localStorage.getItem(FILE_COPY_CLIPBOARD_STORAGE_KEY)
+    if (!raw) return null
+    const clipboard = JSON.parse(raw) as FileCopyClipboard
+    if (
+      !clipboard?.workspaceId ||
+      !Array.isArray(clipboard.items) ||
+      clipboard.items.length === 0 ||
+      clipboard.items.some((item) => !item?.id)
+    ) {
+      return null
+    }
+    return clipboard
+  } catch {
+    return null
+  }
+}
+
+function writeFileCopyClipboard(clipboard: FileCopyClipboard) {
+  try {
+    localStorage.setItem(
+      FILE_COPY_CLIPBOARD_STORAGE_KEY,
+      JSON.stringify(clipboard)
+    )
+  } catch {
+    // 本地存储不可用时，当前页面内的复制粘贴仍然可用。
+  }
+}
+
+function isHandledError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'handled' in error &&
+    error.handled === true
+  )
+}
 
 function isFolderDownloadTaskActive(task: FolderDownloadTaskVO) {
   return (
@@ -88,6 +135,9 @@ export function useFileOperations(
   updateFileItemsCallback?: (ids: string[], patch: Partial<FileItem>) => void
 ) {
   const { t } = useTranslation('files')
+  const currentWorkspaceId = useWorkspaceStore(
+    (state) => state.currentWorkspaceId
+  )
   // 模态框状态
   const [createFolderModalVisible, setCreateFolderModalVisible] =
     useState(false)
@@ -96,6 +146,9 @@ export function useFileOperations(
   const [shareModalVisible, setShareModalVisible] = useState(false)
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false)
   const [detailModalVisible, setDetailModalVisible] = useState(false)
+  const [fileCopyClipboard, setFileCopyClipboard] =
+    useState<FileCopyClipboard | null>(() => readFileCopyClipboard())
+  const [pasting, setPasting] = useState(false)
 
   // 操作的文件
   const [renamingFile, setRenamingFile] = useState<FileItem | null>(null)
@@ -112,6 +165,92 @@ export function useFileOperations(
   const failedFolderDownloadTaskIds = useRef<Set<string>>(new Set())
   const restoredFolderDownloadTaskIds = useRef<Set<string>>(new Set())
   const folderDownloadQueue = useRef(Promise.resolve())
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === FILE_COPY_CLIPBOARD_STORAGE_KEY) {
+        setFileCopyClipboard(readFileCopyClipboard())
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+
+  /**
+   * 将文件加入应用内复制剪贴板。剪贴板按工作空间隔离，可重复粘贴。
+   */
+  const copyToClipboard = useCallback(
+    (files: FileItem | FileItem[]) => {
+      const fileArray = (Array.isArray(files) ? files : [files]).filter(
+        (file, index, all) =>
+          all.findIndex((candidate) => candidate.id === file.id) === index
+      )
+      if (!currentWorkspaceId || fileArray.length === 0) return
+
+      const clipboard: FileCopyClipboard = {
+        workspaceId: currentWorkspaceId,
+        items: fileArray.map(({ id, displayName, isDir }) => ({
+          id,
+          displayName,
+          isDir,
+        })),
+        copiedAt: Date.now(),
+      }
+      setFileCopyClipboard(clipboard)
+      writeFileCopyClipboard(clipboard)
+      toast.success(
+        fileArray.length === 1
+          ? t('operations.copyOne', { name: fileArray[0].displayName })
+          : t('operations.copyMany', { count: fileArray.length })
+      )
+    },
+    [currentWorkspaceId, t]
+  )
+
+  /**
+   * 将剪贴板内容复制到目标目录。
+   */
+  const handlePaste = useCallback(
+    async (targetDirId?: string) => {
+      if (!fileCopyClipboard || fileCopyClipboard.items.length === 0) {
+        toast.warning(t('operations.clipboardEmpty'))
+        return
+      }
+      if (
+        !currentWorkspaceId ||
+        fileCopyClipboard.workspaceId !== currentWorkspaceId
+      ) {
+        toast.warning(t('operations.clipboardWorkspaceMismatch'))
+        return
+      }
+      if (pasting) return
+
+      setPasting(true)
+      try {
+        await copyFiles({
+          dirId: targetDirId,
+          fileIds: fileCopyClipboard.items.map((item) => item.id),
+        })
+        toast.success(
+          t('operations.pasteOk', { count: fileCopyClipboard.items.length })
+        )
+        clearSelectionCallback?.()
+        refreshCallback()
+      } catch (error: unknown) {
+        if (!isHandledError(error)) toast.error(t('operations.pasteFail'))
+      } finally {
+        setPasting(false)
+      }
+    },
+    [
+      clearSelectionCallback,
+      currentWorkspaceId,
+      fileCopyClipboard,
+      pasting,
+      refreshCallback,
+      t,
+    ]
+  )
 
   /**
    * 打开创建文件夹弹窗
@@ -520,6 +659,11 @@ export function useFileOperations(
     deletingFiles,
     detailFile,
     folderDownloadTasks,
+    clipboardItemCount:
+      fileCopyClipboard?.workspaceId === currentWorkspaceId
+        ? fileCopyClipboard.items.length
+        : 0,
+    pasting,
 
     // 操作方法
     openCreateFolderModal,
@@ -536,6 +680,8 @@ export function useFileOperations(
     handleDelete,
     handleDownload,
     handleFavorite,
+    copyToClipboard,
+    handlePaste,
     openPreview,
     openDetail,
     dismissFolderDownloadTask,

@@ -12,6 +12,7 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  ClipboardPaste,
 } from 'lucide-react'
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -151,9 +152,41 @@ export default function FilesPage() {
    */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      const isEditing =
+        target?.matches('input, textarea, select') ||
+        target?.isContentEditable ||
+        Boolean(target?.closest('[contenteditable="true"]'))
+      if (isEditing) return
+
       // ESC 键取消多选
       if (e.key === 'Escape' && selectedKeys.length > 0) {
         clearSelection()
+      }
+
+      const isCommandKey = e.ctrlKey || e.metaKey
+      const key = e.key.toLowerCase()
+
+      // Ctrl/Cmd + C：复制当前选中项到应用内剪贴板
+      if (
+        canWrite &&
+        isCommandKey &&
+        key === 'c' &&
+        selectedFiles.length > 0
+      ) {
+        e.preventDefault()
+        operations.copyToClipboard(selectedFiles)
+      }
+
+      // Ctrl/Cmd + V：粘贴到当前目录
+      if (
+        canWrite &&
+        isCommandKey &&
+        key === 'v' &&
+        operations.clipboardItemCount > 0
+      ) {
+        e.preventDefault()
+        void operations.handlePaste(fileList.currentParentId)
       }
 
       // F2 键重命名（仅当选中单个文件时）
@@ -170,7 +203,14 @@ export default function FilesPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedKeys, fileList.fileList, canWrite])
+  }, [
+    selectedKeys,
+    selectedFiles,
+    fileList.fileList,
+    fileList.currentParentId,
+    canWrite,
+    operations,
+  ])
 
   /**
    * 当目录变化时清空选中状态
@@ -257,6 +297,11 @@ export default function FilesPage() {
     }
     operations.handleDownload(selectedFiles)
     clearSelection()
+  }
+
+  const handleBatchCopy = () => {
+    if (!canWrite || selectedFiles.length === 0) return
+    operations.copyToClipboard(selectedFiles)
   }
 
   const handleBatchRename = () => {
@@ -354,6 +399,9 @@ export default function FilesPage() {
           onUploadDirectory={handleOpenUploadDirectoryModal}
           onCreateFolder={operations.openCreateFolderModal}
           onRefresh={fileList.refresh}
+          onPaste={() => operations.handlePaste(fileList.currentParentId)}
+          clipboardItemCount={operations.clipboardItemCount}
+          pasting={operations.pasting}
           hideActions={false}
         />
       </div>
@@ -503,6 +551,7 @@ export default function FilesPage() {
                       onSelectionChange={setSelectedKeys}
                       onFileClick={handleFileClick}
                       onDownload={operations.handleDownload}
+                      onCopy={operations.copyToClipboard}
                       onShare={operations.openShareModal}
                       onDelete={operations.openDeleteConfirm}
                       onRename={operations.openRenameModal}
@@ -513,6 +562,7 @@ export default function FilesPage() {
                       onDetail={operations.openDetail}
                       onDragStateChange={handleDragStateChange}
                       onBatchShare={handleBatchShare}
+                      onBatchCopy={handleBatchCopy}
                       onBatchMove={handleBatchMove}
                       onBatchDelete={handleBatchDelete}
                       hasMore={fileList.hasMore}
@@ -530,6 +580,7 @@ export default function FilesPage() {
                       orderDirection={fileList.orderDirection}
                       onSortChange={fileList.handleSortChange}
                       onDownload={operations.handleDownload}
+                      onCopy={operations.copyToClipboard}
                       onShare={operations.openShareModal}
                       onDelete={operations.openDeleteConfirm}
                       onRename={operations.openRenameModal}
@@ -540,6 +591,7 @@ export default function FilesPage() {
                       onDetail={operations.openDetail}
                       onDragStateChange={handleDragStateChange}
                       onBatchShare={handleBatchShare}
+                      onBatchCopy={handleBatchCopy}
                       onBatchMove={handleBatchMove}
                       onBatchDelete={handleBatchDelete}
                       hasMore={fileList.hasMore}
@@ -569,6 +621,17 @@ export default function FilesPage() {
               <ContextMenuItem onClick={handleOpenUploadDirectoryModal}>
                 <FolderUp className='mr-2 h-4 w-4' />
                 {t('index.uploadFolder')}
+              </ContextMenuItem>
+            )}
+            {canWrite && operations.clipboardItemCount > 0 && (
+              <ContextMenuItem
+                disabled={operations.pasting}
+                onClick={() => operations.handlePaste(fileList.currentParentId)}
+              >
+                <ClipboardPaste className='mr-2 h-4 w-4' />
+                {t('toolbar.paste', {
+                  count: operations.clipboardItemCount,
+                })}
               </ContextMenuItem>
             )}
             {canWrite && (
@@ -619,6 +682,7 @@ export default function FilesPage() {
         selectedCount={selectedKeys.length}
         hasUnfavorited={hasUnfavorited}
         onDownload={handleBatchDownload}
+        onCopy={handleBatchCopy}
         onRename={handleBatchRename}
         onShare={handleBatchShare}
         onFavorite={handleBatchFavorite}

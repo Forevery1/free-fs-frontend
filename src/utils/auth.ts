@@ -5,6 +5,8 @@ const AUTH_SESSION_KEY = 'authSession'
  * 前端 JavaScript 无法读取，从而降低 XSS 窃取令牌的风险。
  */
 export const setAuthSession = (remember: boolean = false): void => {
+  // 新登录会话不能继承旧账号留下的文件复制剪贴板。
+  localStorage.removeItem('free-fs-file-copy-clipboard')
   if (remember) {
     localStorage.setItem(AUTH_SESSION_KEY, '1')
     sessionStorage.removeItem(AUTH_SESSION_KEY)

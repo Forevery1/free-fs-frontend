@@ -59,6 +59,8 @@ import {
   DeleteConfirmDialog,
   FileDetailModal,
   MySharesView,
+  MyCollectionsView,
+  CreateCollectionModal,
 } from './components'
 import UploadModal from './components/UploadModal'
 import UploadPanel from './components/UploadPanel'
@@ -87,6 +89,8 @@ export default function FilesPage() {
   // 上传弹窗状态
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [uploadDirectoryMode, setUploadDirectoryMode] = useState(false)
+  const [collectionModalOpen, setCollectionModalOpen] = useState(false)
+  const [collectingFolder, setCollectingFolder] = useState<FileItem | null>(null)
 
   // 拖拽状态
   const [dragTargetName, setDragTargetName] = useState<string | null>(null)
@@ -118,6 +122,7 @@ export default function FilesPage() {
   const isRecentsView = viewType === 'recents'
   const isRecycleBin = viewType === 'recycle'
   const isSharesView = viewType === 'shares'
+  const isCollectionsView = viewType === 'collections'
   const isTypeFilter = !!fileType
   const canRead = hasPermission('file:read')
   const canWrite = hasPermission('file:write')
@@ -258,6 +263,12 @@ export default function FilesPage() {
     setUploadModalOpen(true)
   }
 
+  const handleOpenCollectionModal = (folder: FileItem) => {
+    if (!canShare || !folder.isDir) return
+    setCollectingFolder(folder)
+    setCollectionModalOpen(true)
+  }
+
   /**
    * 处理文件点击
    */
@@ -364,6 +375,11 @@ export default function FilesPage() {
   if (isSharesView) {
     if (!canShare) return <NoPermission />
     return <MySharesView />
+  }
+
+  if (isCollectionsView) {
+    if (!canShare) return <NoPermission />
+    return <MyCollectionsView />
   }
 
   if (!canRead) {
@@ -553,6 +569,7 @@ export default function FilesPage() {
                       onDownload={operations.handleDownload}
                       onCopy={operations.copyToClipboard}
                       onShare={operations.openShareModal}
+                      onCollect={handleOpenCollectionModal}
                       onDelete={operations.openDeleteConfirm}
                       onRename={operations.openRenameModal}
                       onMove={operations.openMoveModal}
@@ -582,6 +599,7 @@ export default function FilesPage() {
                       onDownload={operations.handleDownload}
                       onCopy={operations.copyToClipboard}
                       onShare={operations.openShareModal}
+                      onCollect={handleOpenCollectionModal}
                       onDelete={operations.openDeleteConfirm}
                       onRename={operations.openRenameModal}
                       onMove={operations.openMoveModal}
@@ -738,6 +756,12 @@ export default function FilesPage() {
         file={operations.sharingFile}
         files={operations.sharingFiles}
         onSuccess={clearSelection}
+      />
+
+      <CreateCollectionModal
+        open={collectionModalOpen}
+        onOpenChange={setCollectionModalOpen}
+        folder={collectingFolder}
       />
 
       <DeleteConfirmDialog

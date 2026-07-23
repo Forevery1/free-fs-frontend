@@ -7,6 +7,8 @@ import {
   RiFolderOpenLine,
   RiHistoryFill,
   RiHistoryLine,
+  RiInboxArchiveFill,
+  RiInboxArchiveLine,
   RiHome9Fill,
   RiHome9Line,
   RiServerFill,
@@ -70,6 +72,12 @@ export const sidebarData: SidebarData = {
           titleKey: 'sidebar.nav.shares',
           url: '/files?view=shares',
           icon: { line: RiShareLine, fill: RiShareFill },
+          permission: 'file:share',
+        },
+        {
+          titleKey: 'sidebar.nav.collections',
+          url: '/files?view=collections',
+          icon: { line: RiInboxArchiveLine, fill: RiInboxArchiveFill },
           permission: 'file:share',
         },
         {

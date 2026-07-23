@@ -15,6 +15,7 @@ import {
   ArrowDown,
   ChevronsUpDown,
   Copy,
+  Inbox,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatFileListDisplayTime, formatFileSize } from '@/utils/format'
@@ -71,6 +72,7 @@ interface FileListViewProps {
   onDownload: (file: FileItem | FileItem[]) => void
   onCopy: (file: FileItem | FileItem[]) => void
   onShare: (file: FileItem) => void
+  onCollect?: (folder: FileItem) => void
   onDelete: (file: FileItem) => void
   onRename: (file: FileItem) => void
   onMove: (file: FileItem) => void
@@ -103,6 +105,7 @@ export function FileListView({
   onDownload,
   onCopy,
   onShare,
+  onCollect,
   onDelete,
   onRename,
   onMove,
@@ -449,6 +452,17 @@ export function FileListView({
                               {t('rowMenu.share')}
                             </DropdownMenuItem>
                           )}
+                          {canShare && file.isDir && onCollect && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onCollect(file)
+                              }}
+                            >
+                              <Inbox className='size-4' />
+                              {t('rowMenu.collect')}
+                            </DropdownMenuItem>
+                          )}
                           {canRead && (
                             <DropdownMenuItem
                               onClick={(e) => {
@@ -645,6 +659,17 @@ export function FileListView({
                         >
                           <Share2 className='mr-2 h-4 w-4' />
                           {t('rowMenu.share')}
+                        </ContextMenuItem>
+                      )}
+                      {canShare && file.isDir && onCollect && (
+                        <ContextMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onCollect(file)
+                          }}
+                        >
+                          <Inbox className='mr-2 h-4 w-4' />
+                          {t('rowMenu.collect')}
                         </ContextMenuItem>
                       )}
                       {canWrite && (

@@ -52,6 +52,7 @@
   "rowMenu": {
     "preview": "预览",
     "share": "分享",
+    "collect": "文件收集",
     "favorite": "收藏",
     "unfavorite": "取消收藏",
     "download": "下载",

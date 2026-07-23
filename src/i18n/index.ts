@@ -3,6 +3,7 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import { initReactI18next } from 'react-i18next'
 
 import enCommon from '@/locales/en/common.json'
+import enCollection from '@/locales/en/collection.json'
 import enFiles from '@/locales/en/files.json'
 import enHome from '@/locales/en/home.json'
 import enLayout from '@/locales/en/layout.json'
@@ -14,6 +15,7 @@ import enStorage from '@/locales/en/storage.json'
 import enTransfer from '@/locales/en/transfer.json'
 import enWorkspace from '@/locales/en/workspace.json'
 import zhCommon from '@/locales/zh/common.json'
+import zhCollection from '@/locales/zh/collection.json'
 import zhFiles from '@/locales/zh/files.json'
 import zhHome from '@/locales/zh/home.json'
 import zhLayout from '@/locales/zh/layout.json'
@@ -50,6 +52,7 @@ void i18n
     resources: {
       en: {
         common: enCommon,
+        collection: enCollection,
         files: enFiles,
         home: enHome,
         layout: enLayout,
@@ -63,6 +66,7 @@ void i18n
       },
       zh: {
         common: zhCommon,
+        collection: zhCollection,
         files: zhFiles,
         home: zhHome,
         layout: zhLayout,
@@ -81,6 +85,7 @@ void i18n
     load: 'languageOnly',
     ns: [
       'common',
+      'collection',
       'files',
       'home',
       'layout',

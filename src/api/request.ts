@@ -23,7 +23,8 @@ function shouldSkipUnauthorizedRedirect(url: string | undefined): boolean {
   return (
     url.includes('/apis/auth/login') ||
     url.includes('/apis/auth/register') ||
-    url.includes('/apis/user/register')
+    url.includes('/apis/user/register') ||
+    url.includes('/apis/file-collections/public/')
   )
 }
 
@@ -225,6 +226,12 @@ export const request = {
   put<T = any>(url: string, data?: any, config?: AxiosRequestConfig) {
     return service
       .put<T, AxiosResponse<HttpResponse<T>>>(url, data, config)
+      .then((response) => response.data.data)
+  },
+
+  patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig) {
+    return service
+      .patch<T, AxiosResponse<HttpResponse<T>>>(url, data, config)
       .then((response) => response.data.data)
   },
 

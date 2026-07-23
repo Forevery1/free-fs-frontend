@@ -52,6 +52,7 @@
   "rowMenu": {
     "preview": "Preview",
     "share": "Share",
+    "collect": "Collect files",
     "favorite": "Add to favorites",
     "unfavorite": "Remove from favorites",
     "download": "Download",

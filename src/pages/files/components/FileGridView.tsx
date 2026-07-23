@@ -13,6 +13,7 @@ import {
   Info,
   Loader2,
   Copy,
+  Inbox,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatTime } from '@/utils/format'
@@ -45,6 +46,7 @@ interface FileGridViewProps {
   onDownload: (file: FileItem | FileItem[]) => void
   onCopy: (file: FileItem | FileItem[]) => void
   onShare: (file: FileItem) => void
+  onCollect?: (folder: FileItem) => void
   onDelete: (file: FileItem) => void
   onRename: (file: FileItem) => void
   onMove: (file: FileItem) => void
@@ -75,6 +77,7 @@ export function FileGridView({
   onDownload,
   onCopy,
   onShare,
+  onCollect,
   onDelete,
   onRename,
   onMove,
@@ -244,6 +247,17 @@ export function FileGridView({
                           >
                             <Share2 className='mr-2 h-4 w-4' />
                             {t('rowMenu.share')}
+                          </DropdownMenuItem>
+                        )}
+                        {canShare && file.isDir && onCollect && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onCollect(file)
+                            }}
+                          >
+                            <Inbox className='mr-2 h-4 w-4' />
+                            {t('rowMenu.collect')}
                           </DropdownMenuItem>
                         )}
                         {canWrite && (
@@ -494,6 +508,17 @@ export function FileGridView({
                       >
                         <Share2 className='mr-2 h-4 w-4' />
                         {t('rowMenu.share')}
+                      </ContextMenuItem>
+                    )}
+                    {canShare && file.isDir && onCollect && (
+                      <ContextMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onCollect(file)
+                        }}
+                      >
+                        <Inbox className='mr-2 h-4 w-4' />
+                        {t('rowMenu.collect')}
                       </ContextMenuItem>
                     )}
                     {canWrite && (

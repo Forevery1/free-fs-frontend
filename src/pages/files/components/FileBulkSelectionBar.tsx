@@ -43,6 +43,10 @@ export function FileBulkSelectionBar({
   onClear,
 }: FileBulkSelectionBarProps) {
   const { t } = useTranslation('files')
+  const favoriteLabel = hasUnfavorited
+    ? t('rowMenu.favorite')
+    : t('rowMenu.unfavorite')
+
   return (
     <BulkSelectionBar
       selectedCount={selectedCount}
@@ -139,16 +143,23 @@ export function FileBulkSelectionBar({
             <Button
               type='button'
               variant='outline'
-              size='icon'
-              className='size-8 shrink-0'
+              size='sm'
+              className='h-8 shrink-0 gap-1.5 px-2 sm:px-2.5'
               onClick={onFavorite}
-              aria-label={t('bulk.ariaFavorite')}
+              aria-label={favoriteLabel}
             >
-              <Heart fill={hasUnfavorited ? 'none' : 'currentColor'} />
+              <Heart
+                className={
+                  hasUnfavorited
+                    ? 'size-4'
+                    : 'size-4 fill-current text-red-500'
+                }
+              />
+              <span className='hidden sm:inline'>{favoriteLabel}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{t('rowMenu.favorite')}</p>
+            <p>{favoriteLabel}</p>
           </TooltipContent>
         </Tooltip>
       </RequirePermission>

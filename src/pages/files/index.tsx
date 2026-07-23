@@ -326,6 +326,18 @@ export default function FilesPage() {
     operations.openBatchShareModal(selectedFiles)
   }
 
+  const handleBatchCollect = () => {
+    if (
+      !canShare ||
+      !canWrite ||
+      selectedFiles.length !== 1 ||
+      !selectedFiles[0].isDir
+    ) {
+      return
+    }
+    handleOpenCollectionModal(selectedFiles[0])
+  }
+
   const handleBatchFavorite = async () => {
     if (!canWrite) return
     if (selectedFiles.length === 0) return
@@ -703,6 +715,11 @@ export default function FilesPage() {
         onCopy={handleBatchCopy}
         onRename={handleBatchRename}
         onShare={handleBatchShare}
+        onCollect={
+          selectedFiles.length === 1 && selectedFiles[0].isDir
+            ? handleBatchCollect
+            : undefined
+        }
         onFavorite={handleBatchFavorite}
         onMove={handleBatchMove}
         onDelete={handleBatchDelete}

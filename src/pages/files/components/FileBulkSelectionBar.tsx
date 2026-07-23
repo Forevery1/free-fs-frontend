@@ -3,6 +3,7 @@ import {
   Download,
   Edit,
   Share2,
+  Inbox,
   Heart,
   Move,
   Trash2,
@@ -24,6 +25,7 @@ interface FileBulkSelectionBarProps {
   onCopy: () => void
   onRename: () => void
   onShare: () => void
+  onCollect?: () => void
   onFavorite: () => void
   onMove: () => void
   onDelete: () => void
@@ -37,16 +39,13 @@ export function FileBulkSelectionBar({
   onCopy,
   onRename,
   onShare,
+  onCollect,
   onFavorite,
   onMove,
   onDelete,
   onClear,
 }: FileBulkSelectionBarProps) {
   const { t } = useTranslation('files')
-  const favoriteLabel = hasUnfavorited
-    ? t('rowMenu.favorite')
-    : t('rowMenu.unfavorite')
-
   return (
     <BulkSelectionBar
       selectedCount={selectedCount}
@@ -137,29 +136,46 @@ export function FileBulkSelectionBar({
         </Tooltip>
       </RequirePermission>
 
+      {onCollect ? (
+        <RequirePermission code='file:share'>
+          <RequirePermission code='file:write'>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='icon'
+                  className='size-8 shrink-0'
+                  onClick={onCollect}
+                  aria-label={t('rowMenu.collect')}
+                >
+                  <Inbox />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{t('rowMenu.collect')}</p>
+              </TooltipContent>
+            </Tooltip>
+          </RequirePermission>
+        </RequirePermission>
+      ) : null}
+
       <RequirePermission code='file:write'>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               type='button'
               variant='outline'
-              size='sm'
-              className='h-8 shrink-0 gap-1.5 px-2 sm:px-2.5'
+              size='icon'
+              className='size-8 shrink-0'
               onClick={onFavorite}
-              aria-label={favoriteLabel}
+              aria-label={t('bulk.ariaFavorite')}
             >
-              <Heart
-                className={
-                  hasUnfavorited
-                    ? 'size-4'
-                    : 'size-4 fill-current text-red-500'
-                }
-              />
-              <span className='hidden sm:inline'>{favoriteLabel}</span>
+              <Heart fill={hasUnfavorited ? 'none' : 'currentColor'} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{favoriteLabel}</p>
+            <p>{t('rowMenu.favorite')}</p>
           </TooltipContent>
         </Tooltip>
       </RequirePermission>

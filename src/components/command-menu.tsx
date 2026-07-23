@@ -7,7 +7,7 @@ import {
   type ComponentType,
 } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Command as CommandPrimitive } from 'cmdk'
 import {
   FileText,
@@ -45,7 +45,11 @@ const FILE_TYPE_META: {
 ]
 
 /** 与 `useFileList` / 文件页 `searchParams` 约定一致：`keyword`、`type`、`isDir` */
-function buildFilesSearchHref(keyword: string, scope: SearchScopeId): string {
+function buildFilesSearchHref(
+  slug: string,
+  keyword: string,
+  scope: SearchScopeId
+): string {
   const k = keyword.trim()
   const params = new URLSearchParams()
   if (k) params.set('keyword', k)
@@ -57,13 +61,15 @@ function buildFilesSearchHref(keyword: string, scope: SearchScopeId): string {
     params.set('type', scope as FileType)
   }
   const q = params.toString()
-  return q ? `/files?${q}` : '/files'
+  const filesPath = `/w/${slug}/files`
+  return q ? `${filesPath}?${q}` : filesPath
 }
 
 export function CommandMenu() {
   const { t } = useTranslation('common')
   const { open, setOpen } = useSearch()
   const navigate = useNavigate()
+  const { slug } = useParams<{ slug: string }>()
   const inputRef = useRef<HTMLInputElement>(null)
   const [keyword, setKeyword] = useState('')
   const [scopeId, setScopeId] = useState<SearchScopeId>('all')
@@ -104,9 +110,9 @@ export function CommandMenu() {
 
   const submitToFilesPage = () => {
     const q = keyword.trim()
-    if (!q) return
+    if (!q || !slug) return
     setOpen(false)
-    navigate(buildFilesSearchHref(q, scopeId))
+    navigate(buildFilesSearchHref(slug, q, scopeId))
   }
 
   /** 清空关键字并恢复为「全部」类型 */

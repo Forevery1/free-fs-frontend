@@ -364,18 +364,18 @@ export default function FileCollectionPublicPage() {
         </div>
 
         <Card className='shadow-lg shadow-primary/5'>
-          <CardHeader>
-            <div className='flex items-start gap-3'>
-              <div className='min-w-0 flex-1'>
-                <CardTitle className='break-words text-2xl'>{collection.collectionName}</CardTitle>
-                {collection.description && (
-                  <p className='mt-2 whitespace-pre-wrap text-sm text-muted-foreground'>
-                    {collection.description}
-                  </p>
-                )}
-              </div>
-              <ShieldCheck className='size-6 shrink-0 text-emerald-600' />
+          <CardHeader className='text-center'>
+            <div className='relative'>
+              <CardTitle className='break-words px-10 text-2xl'>
+                {collection.collectionName}
+              </CardTitle>
+              <ShieldCheck className='absolute right-0 top-1/2 size-6 -translate-y-1/2 text-emerald-600' />
             </div>
+            {collection.description && (
+              <p className='mx-auto mt-2 max-w-xl whitespace-pre-wrap text-sm text-muted-foreground'>
+                {collection.description}
+              </p>
+            )}
           </CardHeader>
           <CardContent className='space-y-5'>
             {unavailable ? (
@@ -396,22 +396,33 @@ export default function FileCollectionPublicPage() {
               </div>
             ) : (
               <>
-                <div className='grid gap-4 sm:grid-cols-2'>
-                  <div className='space-y-2'>
-                    <Label htmlFor='submitter-name'>{t('public.submitterName')}</Label>
+                <div className='space-y-4'>
+                  <div className='flex w-full items-center gap-3'>
+                    <Label
+                      htmlFor='submitter-name'
+                      className='shrink-0 whitespace-nowrap'
+                    >
+                      {t('public.submitterName')}
+                    </Label>
                     <Input
                       id='submitter-name'
                       value={submitterName}
                       disabled={uploading || Boolean(sessionRef.current)}
+                      className='min-w-0 flex-1'
                       maxLength={64}
                       placeholder={t('public.submitterPlaceholder')}
                       onChange={(event) => setSubmitterName(event.target.value)}
                     />
                   </div>
                   {collection.hasAccessCode && (
-                    <div className='space-y-2'>
-                      <Label htmlFor='collection-access-code'>{t('public.accessCode')}</Label>
-                      <div className='relative'>
+                    <div className='flex w-full items-center gap-3'>
+                      <Label
+                        htmlFor='collection-access-code'
+                        className='shrink-0 whitespace-nowrap'
+                      >
+                        {t('public.accessCode')}
+                      </Label>
+                      <div className='relative min-w-0 flex-1'>
                         <Lock className='absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground' />
                         <Input
                           id='collection-access-code'

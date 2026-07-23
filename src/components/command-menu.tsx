@@ -44,7 +44,7 @@ const FILE_TYPE_META: {
   { id: 'audio', icon: Music },
 ]
 
-/** 与 `useFileList` / 文件页 `searchParams` 约定一致：`keyword`、`type`、`isDir` */
+/** 快捷搜索使用独立参数，避免污染文件页工具栏搜索框的 `keyword`。 */
 function buildFilesSearchHref(
   slug: string,
   keyword: string,
@@ -52,7 +52,7 @@ function buildFilesSearchHref(
 ): string {
   const k = keyword.trim()
   const params = new URLSearchParams()
-  if (k) params.set('keyword', k)
+  if (k) params.set('quickKeyword', k)
   if (scope === 'all') {
     // 仅关键字
   } else if (scope === 'folder') {

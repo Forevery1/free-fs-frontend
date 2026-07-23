@@ -50,7 +50,7 @@ export function useFileList() {
   const [noMorePages, setNoMorePages] = useState(false)
 
   const [breadcrumbPath, setBreadcrumbPath] = useState<BreadcrumbItem[]>([])
-  const { searchInput, setSearchInput, searchKeyword, commitSearch } =
+  const { searchInput, setSearchInput, searchKeyword } =
     useToolbarSearch('keyword')
   const [orderBy, setOrderBy] = useState('updateTime')
   const [orderDirection, setOrderDirection] = useState<SortOrder>('DESC')
@@ -59,6 +59,8 @@ export function useFileList() {
   const viewType = searchParams.get('view')
   const fileType = searchParams.get('type')
   const isDirFilter = searchParams.get('isDir') === 'true'
+  const quickKeyword = searchParams.get('quickKeyword') || ''
+  const activeSearchKeyword = searchKeyword || quickKeyword
 
   const updateBreadcrumbPath = useCallback(async (parentId?: string) => {
     if (!parentId) {
@@ -90,7 +92,7 @@ export function useFileList() {
         orderBy,
         orderDirection,
         parentId: currentParentId,
-        keyword: searchKeyword || undefined,
+        keyword: activeSearchKeyword || undefined,
         fileType: fileType as FileType | undefined,
         isFavorite: isFavoritesView ? true : undefined,
         isRecents: isRecentsView ? true : undefined,
@@ -104,7 +106,7 @@ export function useFileList() {
       orderBy,
       orderDirection,
       currentParentId,
-      searchKeyword,
+      activeSearchKeyword,
       fileType,
       isDirFilter,
     ]
@@ -228,6 +230,21 @@ export function useFileList() {
     []
   )
 
+  const commitFileSearch = useCallback(
+    (keyword: string) => {
+      const params = new URLSearchParams(searchParams)
+      const nextKeyword = keyword.trim()
+      params.delete('quickKeyword')
+      if (nextKeyword) {
+        params.set('keyword', nextKeyword)
+      } else {
+        params.delete('keyword')
+      }
+      navigate(`/w/${slug}/files?${params.toString()}`, { replace: true })
+    },
+    [searchParams, navigate, slug]
+  )
+
   useEffect(() => {
     fetchInitial()
   }, [fetchInitial])
@@ -240,6 +257,8 @@ export function useFileList() {
       const params = new URLSearchParams(searchParams)
       params.set('parentId', folderId)
       params.set('viewMode', viewModeParam)
+      params.delete('keyword')
+      params.delete('quickKeyword')
       navigate(`/w/${slug}/files?${params.toString()}`)
     },
     [searchParams, navigate, slug]
@@ -267,7 +286,7 @@ export function useFileList() {
     fileList,
     breadcrumbPath,
     currentParentId,
-    searchKeyword,
+    searchKeyword: activeSearchKeyword,
     searchInput,
     setSearchInput,
     fetchFileList: fetchInitial,
@@ -275,7 +294,7 @@ export function useFileList() {
     navigateToFolder,
     refresh,
     updateFileItems,
-    commitSearch,
+    commitSearch: commitFileSearch,
     orderBy,
     orderDirection,
     handleSortChange,

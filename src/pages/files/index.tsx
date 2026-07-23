@@ -264,7 +264,7 @@ export default function FilesPage() {
   }
 
   const handleOpenCollectionModal = (folder: FileItem) => {
-    if (!canShare || !folder.isDir) return
+    if (!canShare || !canWrite || !folder.isDir) return
     setCollectingFolder(folder)
     setCollectionModalOpen(true)
   }
@@ -569,7 +569,7 @@ export default function FilesPage() {
                       onDownload={operations.handleDownload}
                       onCopy={operations.copyToClipboard}
                       onShare={operations.openShareModal}
-                      onCollect={handleOpenCollectionModal}
+                      onCollect={canShare && canWrite ? handleOpenCollectionModal : undefined}
                       onDelete={operations.openDeleteConfirm}
                       onRename={operations.openRenameModal}
                       onMove={operations.openMoveModal}
@@ -599,7 +599,7 @@ export default function FilesPage() {
                       onDownload={operations.handleDownload}
                       onCopy={operations.copyToClipboard}
                       onShare={operations.openShareModal}
-                      onCollect={handleOpenCollectionModal}
+                      onCollect={canShare && canWrite ? handleOpenCollectionModal : undefined}
                       onDelete={operations.openDeleteConfirm}
                       onRename={operations.openRenameModal}
                       onMove={operations.openMoveModal}

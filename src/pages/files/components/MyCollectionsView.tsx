@@ -23,6 +23,7 @@ import type {
 } from '@/types/collection'
 import { copyTextToClipboard } from '@/utils/copy-to-clipboard'
 import { formatFileSize } from '@/utils/format'
+import { usePermission } from '@/hooks/use-permission'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -67,6 +68,8 @@ export function MyCollectionsView() {
   const { t: tc } = useTranslation('common')
   const navigate = useNavigate()
   const { slug } = useParams<{ slug: string }>()
+  const { hasPermission } = usePermission()
+  const canWrite = hasPermission('file:write')
   const [keywordInput, setKeywordInput] = useState('')
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState<'ALL' | FileCollectionStatus>('ALL')
@@ -135,6 +138,7 @@ export function MyCollectionsView() {
   const handleStatus = async (collection: FileCollection) => {
     const nextStatus: FileCollectionStatus =
       collection.status === 'OPEN' ? 'CLOSED' : 'OPEN'
+    if (nextStatus === 'OPEN' && !canWrite) return
     await updateFileCollectionStatus(collection.id, nextStatus)
     toast.success(t('manager.statusUpdated'))
     void fetchCollections()
@@ -265,7 +269,10 @@ export function MyCollectionsView() {
                             <DropdownMenuItem onClick={() => openRecords(collection)}>
                               <Inbox className='size-4' />{t('manager.records')}
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => void handleStatus(collection)}>
+                            <DropdownMenuItem
+                              disabled={collection.status === 'CLOSED' && !canWrite}
+                              onClick={() => void handleStatus(collection)}
+                            >
                               <RefreshCw className='size-4' />
                               {collection.status === 'OPEN' ? t('manager.close') : t('manager.reopen')}
                             </DropdownMenuItem>

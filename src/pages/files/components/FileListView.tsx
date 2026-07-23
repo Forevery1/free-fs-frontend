@@ -452,7 +452,7 @@ export function FileListView({
                               {t('rowMenu.share')}
                             </DropdownMenuItem>
                           )}
-                          {canShare && file.isDir && onCollect && (
+                          {canShare && canWrite && file.isDir && onCollect && (
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -661,7 +661,7 @@ export function FileListView({
                           {t('rowMenu.share')}
                         </ContextMenuItem>
                       )}
-                      {canShare && file.isDir && onCollect && (
+                      {canShare && canWrite && file.isDir && onCollect && (
                         <ContextMenuItem
                           onClick={(e) => {
                             e.stopPropagation()

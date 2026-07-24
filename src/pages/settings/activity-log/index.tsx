@@ -8,6 +8,7 @@ import type {
   OperationLogItem,
   OperationLogStatus,
 } from '@/types/log'
+import { formatOperationLogDetail } from '@/utils/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -46,6 +47,10 @@ const OPERATION_TYPES = [
   'CLEAR_RECYCLE',
   'CREATE_SHARE',
   'CANCEL_SHARE',
+  'CREATE_COLLECTION',
+  'UPDATE_COLLECTION',
+  'DELETE_COLLECTION',
+  'COLLECTION_UPLOAD',
   'CREATE_WORKSPACE',
   'UPDATE_WORKSPACE',
   'DELETE_WORKSPACE',
@@ -259,8 +264,8 @@ export function SettingsLogs() {
                       {displayValue(log.operationIp)}
                     </TableCell>
                     <TableCell>
-                      <div className='max-w-[280px] truncate text-xs text-muted-foreground' title={displayValue(log.detail || log.errorMessage)}>
-                        {displayValue(log.detail || log.errorMessage)}
+                      <div className='max-w-[280px] truncate text-xs text-muted-foreground' title={formatOperationLogDetail(log.detail || log.errorMessage)}>
+                        {displayValue(formatOperationLogDetail(log.detail || log.errorMessage))}
                       </div>
                     </TableCell>
                     <TableCell>

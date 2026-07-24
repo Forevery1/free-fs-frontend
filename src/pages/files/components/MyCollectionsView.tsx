@@ -7,11 +7,13 @@ import {
   MoreHorizontal,
   RefreshCw,
   Search,
+  Trash2,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
+  deleteFileCollection,
   getFileCollectionPage,
   getFileCollectionSubmissions,
   updateFileCollectionStatus,
@@ -24,6 +26,7 @@ import type {
 import { copyTextToClipboard } from '@/utils/copy-to-clipboard'
 import { formatFileSize } from '@/utils/format'
 import { usePermission } from '@/hooks/use-permission'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -69,6 +72,7 @@ export function MyCollectionsView() {
   const navigate = useNavigate()
   const { slug } = useParams<{ slug: string }>()
   const { hasPermission } = usePermission()
+  const canShare = hasPermission('file:share')
   const canWrite = hasPermission('file:write')
   const [keywordInput, setKeywordInput] = useState('')
   const [keyword, setKeyword] = useState('')
@@ -85,6 +89,10 @@ export function MyCollectionsView() {
   const [recordsLoading, setRecordsLoading] = useState(false)
   const [recordsPage, setRecordsPage] = useState(1)
   const [recordsTotal, setRecordsTotal] = useState(0)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deletingCollection, setDeletingCollection] =
+    useState<FileCollection | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const fetchCollections = useCallback(async () => {
     setLoading(true)
@@ -105,6 +113,8 @@ export function MyCollectionsView() {
   }, [keyword, page, pageSize, status])
 
   useEffect(() => {
+    // The fetch updates loading/data state after synchronizing with the API.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchCollections()
   }, [fetchCollections])
 
@@ -124,7 +134,11 @@ export function MyCollectionsView() {
   }, [activeCollection, recordsPage])
 
   useEffect(() => {
-    if (recordsOpen) void fetchRecords()
+    if (recordsOpen) {
+      // The fetch updates loading/data state after synchronizing with the API.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void fetchRecords()
+    }
   }, [recordsOpen, fetchRecords])
 
   const collectionUrl = (collection: FileCollection) =>
@@ -142,6 +156,50 @@ export function MyCollectionsView() {
     await updateFileCollectionStatus(collection.id, nextStatus)
     toast.success(t('manager.statusUpdated'))
     void fetchCollections()
+  }
+
+  const requestDelete = (collection: FileCollection) => {
+    setDeletingCollection(collection)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!deletingCollection || deleting) return
+
+    const collection = deletingCollection
+    setDeleting(true)
+    try {
+      await deleteFileCollection(collection.id)
+      toast.success(t('manager.deleted'))
+      setDeleteDialogOpen(false)
+      setDeletingCollection(null)
+
+      if (activeCollection?.id === collection.id) {
+        setRecordsOpen(false)
+        setActiveCollection(null)
+      }
+
+      const shouldGoToPreviousPage = collections.length === 1 && page > 1
+      setCollections((current) =>
+        current.filter((item) => item.id !== collection.id)
+      )
+      setTotal((current) => Math.max(0, current - 1))
+
+      if (shouldGoToPreviousPage) {
+        setPage((current) => Math.max(1, current - 1))
+      } else {
+        void fetchCollections()
+      }
+    } catch (error: unknown) {
+      const handled =
+        typeof error === 'object' &&
+        error !== null &&
+        'handled' in error &&
+        error.handled === true
+      if (!handled) toast.error(t('manager.deleteFailed'))
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const openRecords = (collection: FileCollection) => {
@@ -276,6 +334,14 @@ export function MyCollectionsView() {
                               <RefreshCw className='size-4' />
                               {collection.status === 'OPEN' ? t('manager.close') : t('manager.reopen')}
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={!canShare || !canWrite}
+                              className='text-destructive focus:text-destructive'
+                              onClick={() => requestDelete(collection)}
+                            >
+                              <Trash2 className='size-4' />
+                              {t('manager.delete')}
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -369,6 +435,23 @@ export function MyCollectionsView() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open)
+          if (!open && !deleting) setDeletingCollection(null)
+        }}
+        title={t('manager.deleteTitle')}
+        desc={t('manager.deleteDescription', {
+          name: deletingCollection?.collectionName ?? '',
+        })}
+        cancelBtnText={tc('cancel')}
+        confirmText={deleting ? t('manager.deleting') : t('manager.delete')}
+        destructive
+        isLoading={deleting}
+        handleConfirm={() => void confirmDelete()}
+      />
     </div>
   )
 }

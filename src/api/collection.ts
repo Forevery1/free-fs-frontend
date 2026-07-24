@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios'
 import type {
   CollectionUploadCheckResult,
   CollectionUploadInitParams,
@@ -14,6 +15,11 @@ import type {
 import { request } from './request'
 
 const UPLOAD_TOKEN_HEADER = 'X-Collection-Upload-Token'
+const silentPublicRequestConfig: AxiosRequestConfig & {
+  showErrorMessage: boolean
+} = {
+  showErrorMessage: false,
+}
 const silentUploadConfig = {
   timeout: 0,
   showErrorMessage: false,
@@ -50,6 +56,14 @@ export function updateFileCollectionStatus(
   )
 }
 
+/**
+ * Delete a file collection record without touching files collected into its
+ * target folder.
+ */
+export function deleteFileCollection(collectionId: string) {
+  return request.delete<void>(`/apis/file-collections/${collectionId}`)
+}
+
 export function getFileCollectionSubmissions(
   collectionId: string,
   params?: FileCollectionSubmissionPageQuery
@@ -74,7 +88,7 @@ export function startFileCollectionSubmission(
   return request.post<FileCollectionSubmissionSession>(
     `/apis/file-collections/public/${collectionId}/submissions`,
     { submitterName, accessCode },
-    { showErrorMessage: false } as any
+    silentPublicRequestConfig
   )
 }
 

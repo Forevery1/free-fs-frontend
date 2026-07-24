@@ -6,6 +6,7 @@ import type {
   ProgressUpdate,
   FileTransferTaskVO,
   SSEMessage,
+  SSEStatusData,
 } from '@/types/transfer'
 import { toast } from 'sonner'
 import { create } from 'zustand'
@@ -87,6 +88,12 @@ let pollingTimerId: number | null = null
 let beforeUnloadWarningSetup = false
 const POLLING_INTERVAL = 3000
 
+function normalizeTaskStatus(
+  status: FileTransferTaskVO['status']
+): TaskStatus {
+  return status === 'canceled' ? 'cancelled' : status
+}
+
 function convertVOToTask(vo: FileTransferTaskVO): TransferTask {
   const now = Date.now()
   const progress = vo.progress ?? 0
@@ -96,7 +103,7 @@ function convertVOToTask(vo: FileTransferTaskVO): TransferTask {
     taskId: vo.taskId,
     fileName: vo.fileName,
     fileSize: vo.fileSize,
-    status: vo.status as TaskStatus,
+    status: normalizeTaskStatus(vo.status),
     progress: formattedProgress,
     uploadedBytes: vo.uploadedSize ?? 0,
     speed: vo.speed ?? 0,
@@ -281,9 +288,9 @@ export const useTransferStore = create<TransferStore>((set, get) => ({
       }
 
       case 'status': {
-        const statusData = data as any
+        const statusData = data as SSEStatusData
         if (statusData.status) {
-          get().transitionTo(taskId, statusData.status)
+          get().transitionTo(taskId, normalizeTaskStatus(statusData.status))
         }
         break
       }

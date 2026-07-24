@@ -4,11 +4,32 @@ import type { HomeUsedBytesUnit } from '@/api/home'
 import i18n from '@/i18n'
 
 export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 B'
+  if (!Number.isFinite(bytes)) return '—'
+  if (bytes <= 0) return '0 B'
   const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+  const i = Math.max(
+    0,
+    Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1)
+  )
   return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
+}
+
+const FILE_SIZE_DETAIL_PATTERN =
+  /((?:文件大小|file\s*size)\s*[:：]\s*)(\d+(?:\.\d+)?)(?![\d.]|\s*(?:B|KB|MB|GB|TB|PB|EB|ZB|YB)\b)/gi
+
+/**
+ * Format byte values embedded in operation-log details while preserving the
+ * rest of the server-provided text.
+ */
+export function formatOperationLogDetail(detail?: string | null): string {
+  if (!detail) return ''
+
+  return detail.replace(
+    FILE_SIZE_DETAIL_PATTERN,
+    (_match, label: string, value: string) =>
+      `${label}${formatFileSize(Number(value))}`
+  )
 }
 
 const compactZh = (value: number) =>

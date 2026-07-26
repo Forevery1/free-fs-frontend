@@ -10,6 +10,7 @@ export type FolderDownloadPanelTask = FolderDownloadTaskVO & {
 interface FolderDownloadPanelProps {
   tasks: FolderDownloadPanelTask[]
   onDismiss: (taskId: string) => void
+  onCancel: (taskId: string) => void
 }
 
 function isActive(status: FolderDownloadTaskVO['status']) {
@@ -18,6 +19,9 @@ function isActive(status: FolderDownloadTaskVO['status']) {
 
 function getStatusText(task: FolderDownloadPanelTask) {
   if (task.status === 'failed') return task.errorMessage || '打包失败'
+  if (task.status === 'canceled') return '打包已取消'
+  if (task.status === 'expired') return '下载文件已过期'
+  if (task.status === 'downloading') return '正在下载'
   if (task.status === 'completed') {
     return task.downloadStarted ? '已交给浏览器下载' : '打包完成，准备下载'
   }
@@ -27,6 +31,7 @@ function getStatusText(task: FolderDownloadPanelTask) {
 export default function FolderDownloadPanel({
   tasks,
   onDismiss,
+  onCancel,
 }: FolderDownloadPanelProps) {
   if (tasks.length === 0) return null
 
@@ -44,7 +49,8 @@ export default function FolderDownloadPanel({
               <div className='mt-0.5 shrink-0'>
                 {active ? (
                   <div className='h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent' />
-                ) : task.status === 'completed' ? (
+                ) : task.status === 'completed' ||
+                  task.status === 'downloading' ? (
                   <CheckCircle2 className='h-5 w-5 text-green-600' />
                 ) : (
                   <AlertCircle className='h-5 w-5 text-destructive' />
@@ -63,7 +69,10 @@ export default function FolderDownloadPanel({
                   </div>
                   <X
                     className='h-4 w-4 shrink-0 cursor-pointer text-muted-foreground hover:text-foreground'
-                    onClick={() => onDismiss(task.taskId)}
+                    title={active ? '取消打包' : '关闭'}
+                    onClick={() =>
+                      active ? onCancel(task.taskId) : onDismiss(task.taskId)
+                    }
                   />
                 </div>
 

@@ -13,6 +13,7 @@ import {
   unfavoriteFile,
 } from '@/api/file'
 import {
+  cancelFolderDownloadTask as requestCancelFolderDownloadTask,
   createFolderDownloadTask,
   getFolderDownloadTask,
 } from '@/api/transfer'
@@ -506,6 +507,21 @@ export function useFileOperations(
     restoredFolderDownloadTaskIds.current.delete(taskId)
   }, [])
 
+  const cancelFolderDownloadTask = useCallback(
+    async (taskId: string) => {
+      try {
+        await requestCancelFolderDownloadTask(taskId)
+        dismissFolderDownloadTask(taskId)
+        toast.info('文件夹打包已取消')
+      } catch (error) {
+        if (!isHandledError(error)) {
+          toast.error('取消文件夹打包失败')
+        }
+      }
+    },
+    [dismissFolderDownloadTask]
+  )
+
   useEffect(() => {
     writeStoredFolderDownloadTasks(folderDownloadTasks)
   }, [folderDownloadTasks])
@@ -685,5 +701,6 @@ export function useFileOperations(
     openPreview,
     openDetail,
     dismissFolderDownloadTask,
+    cancelFolderDownloadTask,
   }
 }

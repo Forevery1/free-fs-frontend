@@ -741,6 +741,7 @@ export default function FilesPage() {
       <FolderDownloadPanel
         tasks={operations.folderDownloadTasks}
         onDismiss={operations.dismissFolderDownloadTask}
+        onCancel={operations.cancelFolderDownloadTask}
       />
 
       {/* 模态框 */}

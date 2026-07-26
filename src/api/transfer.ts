@@ -137,6 +137,16 @@ export function getFolderDownloadTask(taskId: string) {
 }
 
 /**
+ * 取消文件夹下载打包任务
+ */
+export function cancelFolderDownloadTask(taskId: string) {
+  return request.delete(
+    `/apis/transfer/folder-download/tasks/${taskId}`,
+    silentUploadRequestConfig
+  )
+}
+
+/**
  * 下载文件夹压缩包
  */
 export function downloadFolderTaskFile(taskId: string) {

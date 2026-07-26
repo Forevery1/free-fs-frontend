@@ -164,8 +164,11 @@ export type FolderDownloadTaskStatus =
   | 'queued'
   | 'scanning'
   | 'packing'
+  | 'downloading'
   | 'completed'
   | 'failed'
+  | 'canceled'
+  | 'expired'
 
 export interface FolderDownloadTaskVO {
   taskId: string

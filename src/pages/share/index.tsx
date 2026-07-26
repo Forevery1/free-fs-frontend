@@ -608,6 +608,7 @@ export default function SharePage() {
       <FolderDownloadPanel
         tasks={folderDownload.tasks}
         onDismiss={folderDownload.dismissTask}
+        onCancel={folderDownload.cancelTask}
       />
     </div>
   )

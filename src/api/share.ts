@@ -118,3 +118,13 @@ export function getShareFolderDownloadTask(shareId: string, taskId: string) {
     silentRequestConfig
   )
 }
+
+/**
+ * 取消分享文件夹下载打包任务
+ */
+export function cancelShareFolderDownloadTask(shareId: string, taskId: string) {
+  return request.delete(
+    `/apis/share/${shareId}/folder-download/tasks/${taskId}`,
+    silentRequestConfig
+  )
+}

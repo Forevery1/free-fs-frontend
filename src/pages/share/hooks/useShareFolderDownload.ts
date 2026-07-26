@@ -5,6 +5,7 @@ import type { FolderDownloadTaskVO } from '@/types/transfer'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
+  cancelShareFolderDownloadTask,
   createShareFolderDownloadTask,
   getShareFolderDownloadTask,
 } from '@/api/share'
@@ -124,6 +125,20 @@ export function useShareFolderDownload(shareId?: string) {
     failedTaskIds.current.delete(taskId)
   }, [])
 
+  const cancelTask = useCallback(
+    async (taskId: string) => {
+      if (!shareId) return
+      try {
+        await cancelShareFolderDownloadTask(shareId, taskId)
+        dismissTask(taskId)
+        toast.info('文件夹打包已取消')
+      } catch {
+        toast.error('取消文件夹打包失败')
+      }
+    },
+    [dismissTask, shareId]
+  )
+
   useEffect(() => {
     if (!shareId) return
     const activeTasks = tasks.filter(isTaskActive)
@@ -146,5 +161,6 @@ export function useShareFolderDownload(shareId?: string) {
     tasks,
     downloadFolder,
     dismissTask,
+    cancelTask,
   }
 }

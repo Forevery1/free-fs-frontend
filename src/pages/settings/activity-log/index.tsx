@@ -149,7 +149,7 @@ export function SettingsLogs() {
         </SettingsPageDescription>
       </header>
 
-      <div className='mt-6 flex min-h-0 flex-1 flex-col'>
+      <div className='mt-6 flex flex-1 flex-col'>
         <form
           onSubmit={handleSearch}
           className='mb-4 flex flex-wrap items-center gap-2'
@@ -211,16 +211,16 @@ export function SettingsLogs() {
           </Button>
         </form>
 
-        <div className='min-h-0 flex-1 overflow-auto rounded-md border'>
-          <Table className='min-w-[920px]'>
+        <div className='rounded-md border'>
+          <Table containerClassName='overflow-visible'>
             <TableHeader>
               <TableRow>
                 <TableHead className='w-[150px]'>{t('logs.colTime')}</TableHead>
                 <TableHead className='w-[120px]'>{t('logs.colOperator')}</TableHead>
                 <TableHead className='w-[150px]'>{t('logs.colOperation')}</TableHead>
-                <TableHead className='min-w-[180px]'>{t('logs.colTarget')}</TableHead>
+                <TableHead>{t('logs.colTarget')}</TableHead>
                 <TableHead className='w-[130px]'>{t('logs.colIp')}</TableHead>
-                <TableHead className='min-w-[220px]'>{t('logs.colDetail')}</TableHead>
+                <TableHead>{t('logs.colDetail')}</TableHead>
                 <TableHead className='w-[80px]'>{t('logs.colStatus')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -256,7 +256,7 @@ export function SettingsLogs() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className='max-w-[220px] truncate text-sm' title={displayValue(log.targetName || log.targetId)}>
+                      <div className='truncate text-sm' title={displayValue(log.targetName || log.targetId)}>
                         {displayValue(log.targetName || log.targetId)}
                       </div>
                     </TableCell>
@@ -264,7 +264,7 @@ export function SettingsLogs() {
                       {displayValue(log.operationIp)}
                     </TableCell>
                     <TableCell>
-                      <div className='max-w-[280px] truncate text-xs text-muted-foreground' title={formatOperationLogDetail(log.detail || log.errorMessage)}>
+                      <div className='truncate text-xs text-muted-foreground' title={formatOperationLogDetail(log.detail || log.errorMessage)}>
                         {displayValue(formatOperationLogDetail(log.detail || log.errorMessage))}
                       </div>
                     </TableCell>

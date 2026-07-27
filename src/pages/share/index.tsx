@@ -494,7 +494,7 @@ export default function SharePage() {
               onValueChange={(field) => handleSortChange(field, orderDirection)}
             >
               <SelectTrigger
-                className='h-8 w-[8.75rem]'
+                className='h-8 w-auto'
                 size='sm'
                 aria-label={t('sort.fieldAria')}
               >

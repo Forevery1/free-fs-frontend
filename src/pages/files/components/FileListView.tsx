@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/table'
 import { FileIcon } from '@/components/file-icon'
 import { GifThumbnail } from '@/components/gif-thumbnail'
+import { resolveResourceUrl } from '@/utils/resource-url'
 import { useFileDragDrop } from '../hooks/useFileDragDrop'
 import { FileListScrollSentinel } from './FileListScrollSentinel'
 
@@ -346,7 +347,7 @@ export function FileListView({
                         <div className='flex size-8 shrink-0 items-center justify-center rounded-md bg-muted/40'>
                           {file.thumbnailUrl && file.suffix?.toLowerCase() === 'gif' ? (
                             <GifThumbnail
-                              src={file.thumbnailUrl}
+                              src={resolveResourceUrl(file.thumbnailUrl)}
                               alt={file.displayName}
                               className='size-7 rounded'
                               width={56}
@@ -354,7 +355,7 @@ export function FileListView({
                             />
                           ) : file.thumbnailUrl ? (
                             <img
-                              src={file.thumbnailUrl}
+                              src={resolveResourceUrl(file.thumbnailUrl)}
                               alt={file.displayName}
                               loading='lazy'
                               decoding='async'

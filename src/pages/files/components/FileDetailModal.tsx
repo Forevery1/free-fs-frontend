@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { FileItem, BreadcrumbItem } from '@/types/file'
 import { getFileDetail } from '@/api/file'
 import { formatFileSize, formatTime } from '@/utils/format'
+import { resolveResourceUrl } from '@/utils/resource-url'
 import {
   Dialog,
   DialogContent,
@@ -105,7 +106,7 @@ export function FileDetailModal({
           <div className='flex justify-center'>
             {displayFile.thumbnailUrl ? (
               <img
-                src={displayFile.thumbnailUrl}
+                src={resolveResourceUrl(displayFile.thumbnailUrl)}
                 alt={displayFile.displayName}
                 className='h-[100px] w-[100px] rounded object-cover pointer-events-none select-none'
                 draggable={false}

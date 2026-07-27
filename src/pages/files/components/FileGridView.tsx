@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { FileIcon } from '@/components/file-icon'
 import { GifThumbnail } from '@/components/gif-thumbnail'
+import { resolveResourceUrl } from '@/utils/resource-url'
 import { useFileDragDrop } from '../hooks/useFileDragDrop'
 import { FileListScrollSentinel } from './FileListScrollSentinel'
 
@@ -355,14 +356,14 @@ export function FileGridView({
                   <div className='mb-3 flex min-h-[90px] items-center justify-center overflow-visible pt-1'>
                     {file.thumbnailUrl && file.suffix?.toLowerCase() === 'gif' ? (
                       <GifThumbnail
-                        src={file.thumbnailUrl}
+                        src={resolveResourceUrl(file.thumbnailUrl)}
                         alt={file.displayName}
                         className='h-[75px] w-[95px] shrink-0 rounded-md shadow-sm transition-transform group-hover:scale-[1.02]'
                       />
                     ) : file.thumbnailUrl ? (
                       <div className='h-[75px] w-[95px] shrink-0 overflow-hidden rounded-md shadow-sm transition-transform group-hover:scale-[1.02]'>
                         <img
-                          src={file.thumbnailUrl}
+                          src={resolveResourceUrl(file.thumbnailUrl)}
                           alt={file.displayName}
                           loading='lazy'
                           decoding='async'

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTransferStore } from '@/store/transfer'
+import { useShallow } from 'zustand/react/shallow'
 import { RefreshCw, Upload, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -31,7 +32,20 @@ export default function TransferPage() {
     retryTask,
     clearCompletedTasks,
     sseConnected,
-  } = useTransferStore()
+  } = useTransferStore(
+    useShallow((state) => ({
+      getUploadingTasks: state.getUploadingTasks,
+      getCompletedTasks: state.getCompletedTasks,
+      fetchTasks: state.fetchTasks,
+      pauseTask: state.pauseTask,
+      resumeTask: state.resumeTask,
+      cancelTask: state.cancelTask,
+      retryTask: state.retryTask,
+      clearCompletedTasks: state.clearCompletedTasks,
+      sseConnected: state.sseConnected,
+      tasks: state.tasks,
+    }))
+  )
 
   const uploadingTasks = getUploadingTasks()
   const completedTasks = getCompletedTasks()

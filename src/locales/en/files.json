@@ -34,15 +34,29 @@
   },
   "table": {
     "colName": "Name",
+    "colType": "Type",
     "colSize": "Size",
-    "colModified": "Modified"
+    "colModified": "Modified",
+    "folderType": "Folder",
+    "unknownType": "Unknown"
+  },
+  "sort": {
+    "fieldAria": "Choose sort field",
+    "name": "Name",
+    "modified": "Modified",
+    "type": "Type",
+    "size": "Size",
+    "ascending": "Ascending",
+    "descending": "Descending"
   },
   "rowMenu": {
     "preview": "Preview",
     "share": "Share",
+    "collect": "Collect files",
     "favorite": "Add to favorites",
     "unfavorite": "Remove from favorites",
     "download": "Download",
+    "copy": "Copy",
     "rename": "Rename",
     "move": "Move to",
     "detail": "Details",
@@ -52,11 +66,13 @@
     "allFiles": "All files"
   },
   "toolbar": {
-    "searchPlaceholder": "Search"
+    "searchPlaceholder": "Search",
+    "paste": "Paste ({{count}})"
   },
   "bulk": {
     "ariaBar": "Bulk actions",
     "ariaDownload": "Download",
+    "ariaCopy": "Copy",
     "ariaRename": "Rename",
     "ariaShare": "Share",
     "ariaFavorite": "Favorite",
@@ -278,6 +294,12 @@
     "renameFail": "Rename failed",
     "moveOk": "Moved",
     "moveFail": "Move failed",
+    "copyOne": "Copied \"{{name}}\"",
+    "copyMany": "Copied {{count}} items",
+    "clipboardEmpty": "There is nothing to paste",
+    "clipboardWorkspaceMismatch": "Files cannot be pasted across workspaces",
+    "pasteOk": "Pasted {{count}} items",
+    "pasteFail": "Paste failed",
     "trashOne": "Moved to trash",
     "trashMany": "Moved {{count}} items to trash",
     "trashFail": "Delete failed",

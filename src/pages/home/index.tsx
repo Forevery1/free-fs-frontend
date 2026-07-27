@@ -8,7 +8,6 @@ import {
   buildCategoryShortcuts,
   CategoryShortcutLink,
 } from './components/section-cards'
-import { OpenSourceCard } from './components/open-source-card'
 import { StorageOverviewCard } from './components/storage-usage-card'
 
 export default function HomePage() {
@@ -37,14 +36,13 @@ export default function HomePage() {
                 <ChartStorageGrowth
                   unit={homeStorageUnit}
                   onUnitChange={setHomeStorageUnit}
-                  className='min-h-[400px] min-w-0 sm:min-h-[440px] md:min-h-[460px] lg:col-span-5 lg:row-start-2 lg:h-full lg:min-h-0'
+                  className='min-h-[400px] min-w-0 sm:min-h-[440px] md:min-h-[460px] lg:col-span-5 lg:row-start-2 lg:min-h-[380px]'
                 />
-                <div className='flex min-h-0 min-w-0 flex-col gap-3 lg:col-span-1 lg:col-start-6 lg:row-span-2 lg:row-start-1 lg:h-full'>
+                <div className='flex min-h-0 min-w-0 flex-col gap-3 lg:col-span-1 lg:col-start-6 lg:row-span-2 lg:row-start-1 lg:min-h-[380px]'>
                   <StorageOverviewCard
                     storageUnit={homeStorageUnit}
                     className='min-h-0 flex-1 lg:min-h-0'
                   />
-                  <OpenSourceCard className='shrink-0' />
                 </div>
               </div>
             </div>

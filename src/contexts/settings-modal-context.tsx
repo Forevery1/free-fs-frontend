@@ -14,13 +14,13 @@ export type SettingsTab =
   | 'workspace'
   | 'members'
   | 'roles'
+  | 'logs'
 
 type SettingsModalValue = {
   open: boolean
   setOpen: (open: boolean) => void
   tab: SettingsTab
   setTab: (tab: SettingsTab) => void
-  /** 打开设置；可指定初始面板，默认个人资料 */
   openSettings: (tab?: SettingsTab) => void
 }
 
@@ -56,7 +56,7 @@ export function SettingsModalProvider({ children }: { children: ReactNode }) {
 export function useSettingsModal() {
   const ctx = useContext(SettingsModalContext)
   if (!ctx) {
-    throw new Error('useSettingsModal 须在 SettingsModalProvider 内使用')
+    throw new Error('useSettingsModal must be used within SettingsModalProvider')
   }
   return ctx
 }

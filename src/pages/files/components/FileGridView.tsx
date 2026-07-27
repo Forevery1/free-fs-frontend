@@ -12,6 +12,8 @@ import {
   Eye,
   Info,
   Loader2,
+  Copy,
+  Inbox,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatTime } from '@/utils/format'
@@ -32,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { FileIcon } from '@/components/file-icon'
+import { GifThumbnail } from '@/components/gif-thumbnail'
 import { useFileDragDrop } from '../hooks/useFileDragDrop'
 import { FileListScrollSentinel } from './FileListScrollSentinel'
 
@@ -41,7 +44,9 @@ interface FileGridViewProps {
   onSelectionChange: (keys: string[]) => void
   onFileClick: (file: FileItem) => void
   onDownload: (file: FileItem | FileItem[]) => void
+  onCopy: (file: FileItem | FileItem[]) => void
   onShare: (file: FileItem) => void
+  onCollect?: (folder: FileItem) => void
   onDelete: (file: FileItem) => void
   onRename: (file: FileItem) => void
   onMove: (file: FileItem) => void
@@ -54,6 +59,7 @@ interface FileGridViewProps {
     draggedCount: number
   ) => void
   onBatchShare?: (files: FileItem[]) => void
+  onBatchCopy?: (files: FileItem[]) => void
   onBatchMove?: (files: FileItem[]) => void
   onBatchDelete?: (files: FileItem[]) => void
   hasMore?: boolean
@@ -69,7 +75,9 @@ export function FileGridView({
   onSelectionChange,
   onFileClick,
   onDownload,
+  onCopy,
   onShare,
+  onCollect,
   onDelete,
   onRename,
   onMove,
@@ -79,6 +87,7 @@ export function FileGridView({
   onDetail,
   onDragStateChange,
   onBatchShare,
+  onBatchCopy,
   onBatchMove,
   onBatchDelete,
   hasMore = false,
@@ -97,7 +106,6 @@ export function FileGridView({
   const selectedSet = new Set(selectedKeys)
   const selectedFiles = fileList.filter((f) => selectedSet.has(f.id))
   const hasUnfavorited = selectedFiles.some((f) => !f.isFavorite)
-  const downloadableFiles = selectedFiles.filter((f) => !f.isDir)
 
   // 拖拽功能
   const {
@@ -169,6 +177,7 @@ export function FileGridView({
               <ContextMenuTrigger asChild>
                 <div
                   data-file-id={file.id}
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '150px 150px' }}
                   className={cn(
                     'group relative cursor-pointer rounded-lg p-4 pb-2 text-center transition-all',
                     'hover:bg-accent',
@@ -240,6 +249,17 @@ export function FileGridView({
                             {t('rowMenu.share')}
                           </DropdownMenuItem>
                         )}
+                        {canShare && canWrite && file.isDir && onCollect && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onCollect(file)
+                            }}
+                          >
+                            <Inbox className='mr-2 h-4 w-4' />
+                            {t('rowMenu.collect')}
+                          </DropdownMenuItem>
+                        )}
                         {canWrite && (
                           <DropdownMenuItem
                             onClick={(e) => {
@@ -258,7 +278,7 @@ export function FileGridView({
                               : t('rowMenu.favorite')}
                           </DropdownMenuItem>
                         )}
-                        {!file.isDir && canRead && (
+                        {canRead && (
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation()
@@ -267,6 +287,17 @@ export function FileGridView({
                           >
                             <Download className='mr-2 h-4 w-4' />
                             {t('rowMenu.download')}
+                          </DropdownMenuItem>
+                        )}
+                        {canWrite && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onCopy(file)
+                            }}
+                          >
+                            <Copy className='mr-2 h-4 w-4' />
+                            {t('rowMenu.copy')}
                           </DropdownMenuItem>
                         )}
                         {canWrite && <DropdownMenuSeparator />}
@@ -322,11 +353,20 @@ export function FileGridView({
 
                   {/* 缩略图 95×75；文件夹同宽，略增高以容纳 Folder 顶部标签（勿 overflow-hidden） */}
                   <div className='mb-3 flex min-h-[90px] items-center justify-center overflow-visible pt-1'>
-                    {file.thumbnailUrl ? (
+                    {file.thumbnailUrl && file.suffix?.toLowerCase() === 'gif' ? (
+                      <GifThumbnail
+                        src={file.thumbnailUrl}
+                        alt={file.displayName}
+                        className='h-[75px] w-[95px] shrink-0 rounded-md shadow-sm transition-transform group-hover:scale-[1.02]'
+                      />
+                    ) : file.thumbnailUrl ? (
                       <div className='h-[75px] w-[95px] shrink-0 overflow-hidden rounded-md shadow-sm transition-transform group-hover:scale-[1.02]'>
                         <img
                           src={file.thumbnailUrl}
                           alt={file.displayName}
+                          loading='lazy'
+                          decoding='async'
+                          fetchPriority='low'
                           className='h-full w-full object-cover object-center pointer-events-none select-none'
                           draggable={false}
                           onContextMenu={(e) => e.preventDefault()}
@@ -367,15 +407,26 @@ export function FileGridView({
                 {isMultiSelected ? (
                   // 多选菜单
                   <>
-                    {canRead && downloadableFiles.length > 0 && (
+                    {canRead && selectedFiles.length > 0 && (
                       <ContextMenuItem
                         onClick={(e) => {
                           e.stopPropagation()
-                          onDownload(downloadableFiles)
+                          onDownload(selectedFiles)
                         }}
                       >
                         <Download className='mr-2 h-4 w-4' />
                         {t('rowMenu.download')}
+                      </ContextMenuItem>
+                    )}
+                    {canWrite && onBatchCopy && selectedFiles.length > 0 && (
+                      <ContextMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onBatchCopy(selectedFiles)
+                        }}
+                      >
+                        <Copy className='mr-2 h-4 w-4' />
+                        {t('rowMenu.copy')}
                       </ContextMenuItem>
                     )}
                     {canShare && onBatchShare && (
@@ -459,6 +510,17 @@ export function FileGridView({
                         {t('rowMenu.share')}
                       </ContextMenuItem>
                     )}
+                    {canShare && canWrite && file.isDir && onCollect && (
+                      <ContextMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onCollect(file)
+                        }}
+                      >
+                        <Inbox className='mr-2 h-4 w-4' />
+                        {t('rowMenu.collect')}
+                      </ContextMenuItem>
+                    )}
                     {canWrite && (
                       <ContextMenuItem
                         onClick={(e) => {
@@ -477,7 +539,7 @@ export function FileGridView({
                           : t('rowMenu.favorite')}
                       </ContextMenuItem>
                     )}
-                    {!file.isDir && canRead && (
+                    {canRead && (
                       <ContextMenuItem
                         onClick={(e) => {
                           e.stopPropagation()
@@ -486,6 +548,17 @@ export function FileGridView({
                       >
                         <Download className='mr-2 h-4 w-4' />
                         {t('rowMenu.download')}
+                      </ContextMenuItem>
+                    )}
+                    {canWrite && (
+                      <ContextMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onCopy(file)
+                        }}
+                      >
+                        <Copy className='mr-2 h-4 w-4' />
+                        {t('rowMenu.copy')}
                       </ContextMenuItem>
                     )}
                     {canWrite && <ContextMenuSeparator />}

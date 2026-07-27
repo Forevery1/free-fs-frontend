@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler'
-import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
@@ -69,58 +68,6 @@ export function Header({ className, fixed, children, ...props }: HeaderProps) {
           <div className='min-w-0 flex-1'>{children}</div>
         </div>
         <div className='flex shrink-0 items-center justify-end gap-1'>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant='ghost' size='icon' asChild className='h-9 w-9'>
-                  <a
-                    href='https://github.com/dromara/free-fs'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    aria-label='GitHub'
-                  >
-                    <img
-                      src='/svg/github.svg'
-                      alt=''
-                      className='h-4 w-4'
-                      aria-hidden
-                    />
-                  </a>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>GitHub</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant='ghost' size='icon' asChild className='h-9 w-9'>
-                  <a
-                    href='https://gitee.com/dromara/free-fs'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    aria-label='Gitee'
-                  >
-                    <img
-                      src='/svg/gitee.svg'
-                      alt=''
-                      className='h-4 w-4'
-                      aria-hidden
-                    />
-                  </a>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Gitee</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <Separator orientation='vertical' className='mx-1 h-4' />
-
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

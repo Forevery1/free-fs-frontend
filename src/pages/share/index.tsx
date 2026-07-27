@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
-import type { FileItem } from '@/types/file'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import FolderDownloadPanel from '@/pages/files/components/FolderDownloadPanel'
+import { getCurrentWorkspaceId } from '@/store/workspace'
+import type { FileItem, SortOrder } from '@/types/file'
 import type { ShareThin } from '@/types/share'
 import {
   Clock,
@@ -11,7 +12,11 @@ import {
   List,
   LayoutGrid,
   Share2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -19,10 +24,8 @@ import {
   validateShareCode,
   getShareItemList,
 } from '@/api/share'
-import { getToken } from '@/utils/auth'
 import { getAvatarFallback } from '@/utils/avatar'
 import { openFilePreviewWithToken } from '@/utils/preview'
-import { getCurrentWorkspaceId } from '@/store/workspace'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   Breadcrumb,
@@ -33,9 +36,17 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { FileIcon } from '@/components/file-icon'
 import { ShareFileListView, ShareFileGridView } from './components'
+import { useShareFolderDownload } from './hooks/useShareFolderDownload'
 
 type ViewMode = 'list' | 'grid'
 
@@ -66,11 +77,62 @@ export default function SharePage() {
   const [fileList, setFileList] = useState<FileItem[]>([])
   const [bodyLoading, setBodyLoading] = useState(false)
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([])
+  const [orderBy, setOrderBy] = useState('updateTime')
+  const [orderDirection, setOrderDirection] = useState<SortOrder>('DESC')
   const [viewMode, setViewMode] = useState<ViewMode>(
     (searchParams.get('viewMode') as ViewMode) || 'list'
   )
 
   const parentId = searchParams.get('parentId') || undefined
+  const folderDownload = useShareFolderDownload(shareToken)
+
+  const sortedFileList = useMemo(() => {
+    const direction = orderDirection === 'ASC' ? 1 : -1
+    return [...fileList].sort((left, right) => {
+      if (left.isDir !== right.isDir) return left.isDir ? -1 : 1
+
+      let comparison = 0
+      if (orderBy === 'displayName') {
+        comparison = (
+          left.displayName ||
+          left.originalName ||
+          ''
+        ).localeCompare(
+          right.displayName || right.originalName || '',
+          undefined,
+          { numeric: true, sensitivity: 'base' }
+        )
+      } else if (orderBy === 'suffix') {
+        comparison = (left.suffix || '').localeCompare(
+          right.suffix || '',
+          undefined,
+          {
+            numeric: true,
+            sensitivity: 'base',
+          }
+        )
+      } else if (orderBy === 'size') {
+        comparison = (left.size || 0) - (right.size || 0)
+      } else {
+        comparison =
+          new Date(left.updateTime || 0).getTime() -
+          new Date(right.updateTime || 0).getTime()
+      }
+
+      if (comparison === 0) {
+        comparison = (
+          left.displayName ||
+          left.originalName ||
+          ''
+        ).localeCompare(
+          right.displayName || right.originalName || '',
+          undefined,
+          { numeric: true, sensitivity: 'base' }
+        )
+      }
+      return comparison * direction
+    })
+  }, [fileList, orderBy, orderDirection])
 
   // 验证提取码
   const handleVerify = async () => {
@@ -155,7 +217,11 @@ export default function SharePage() {
   // 处理文件点击
   const handleFileClick = (file: FileItem) => {
     if (file.isDir) {
-      setBreadcrumbs([...breadcrumbs, { name: file.originalName, id: file.id }])
+      if (parentId === file.id) return
+      setBreadcrumbs((current) => {
+        if (current.at(-1)?.id === file.id) return current
+        return [...current, { name: file.originalName, id: file.id }]
+      })
       const params = new URLSearchParams(searchParams)
       params.set('parentId', file.id)
       params.set('viewMode', viewMode)
@@ -202,22 +268,30 @@ export default function SharePage() {
 
   // 处理预览
   const handlePreview = async (file: FileItem) => {
-    await openFilePreviewWithToken(file.id, import.meta.env.VITE_API_BASE_URL)
+    await openFilePreviewWithToken(file, import.meta.env.VITE_API_BASE_URL, sortedFileList)
+  }
+
+  const handleSortChange = (field: string, direction: SortOrder) => {
+    setOrderBy(field)
+    setOrderDirection(direction)
   }
 
   // 处理下载
   const handleDownload = (file: FileItem) => {
+    if (file.isDir) {
+      void folderDownload.downloadFolder(file)
+      return
+    }
+
     try {
-      const token = getToken()
       const workspaceId = getCurrentWorkspaceId()
-      
-      // 构建下载链接，将 token 和 workspaceId 放到 URL 参数中
+
+      // 认证凭据由 HttpOnly Cookie 自动携带，URL 中只保留工作空间上下文。
       const params = new URLSearchParams()
-      params.set('Authorization', `Bearer ${token}`)
       if (workspaceId) {
         params.set('X-Workspace-Id', workspaceId)
       }
-      
+
       const downloadUrl = `${import.meta.env.VITE_API_BASE_URL}/apis/share/${shareToken}/download/${file.id}?${params.toString()}`
 
       const link = document.createElement('a')
@@ -228,7 +302,7 @@ export default function SharePage() {
       link.click()
       document.body.removeChild(link)
       toast.success(t('toast.downloadStart'))
-    } catch (error) {
+    } catch {
       toast.error(t('toast.downloadFail'))
     }
   }
@@ -293,9 +367,7 @@ export default function SharePage() {
             {shareData.expireTime && (
               <div className='flex items-center justify-center gap-2 text-sm text-muted-foreground'>
                 <Clock className='h-4 w-4' />
-                <span>
-                  {t('expired.at', { time: shareData.expireTime })}
-                </span>
+                <span>{t('expired.at', { time: shareData.expireTime })}</span>
               </div>
             )}
           </div>
@@ -417,15 +489,70 @@ export default function SharePage() {
             {t('browse.totalFiles', { count: fileList.length })}
           </span>
           <div className='flex items-center gap-2'>
+            <Select
+              value={orderBy}
+              onValueChange={(field) => handleSortChange(field, orderDirection)}
+            >
+              <SelectTrigger
+                className='h-8 w-[8.75rem]'
+                size='sm'
+                aria-label={t('sort.fieldAria')}
+              >
+                <ArrowUpDown className='size-4 text-muted-foreground' />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='displayName'>{t('sort.name')}</SelectItem>
+                <SelectItem value='updateTime'>{t('sort.modified')}</SelectItem>
+                <SelectItem value='suffix'>{t('sort.type')}</SelectItem>
+                <SelectItem value='size'>{t('sort.size')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              type='button'
+              variant='outline'
+              size='icon'
+              className='size-8 shrink-0'
+              onClick={() =>
+                handleSortChange(
+                  orderBy,
+                  orderDirection === 'ASC' ? 'DESC' : 'ASC'
+                )
+              }
+              aria-label={
+                orderDirection === 'ASC'
+                  ? t('sort.ascending')
+                  : t('sort.descending')
+              }
+              title={
+                orderDirection === 'ASC'
+                  ? t('sort.ascending')
+                  : t('sort.descending')
+              }
+            >
+              {orderDirection === 'ASC' ? (
+                <ArrowUp className='size-4' />
+              ) : (
+                <ArrowDown className='size-4' />
+              )}
+            </Button>
             <ToggleGroup
               type='single'
               value={viewMode}
               onValueChange={(value) => value && setViewMode(value as ViewMode)}
             >
-              <ToggleGroupItem value='list' aria-label={t('browse.listView')} size='sm'>
+              <ToggleGroupItem
+                value='list'
+                aria-label={t('browse.listView')}
+                size='sm'
+              >
                 <List className='h-4 w-4' />
               </ToggleGroupItem>
-              <ToggleGroupItem value='grid' aria-label={t('browse.gridView')} size='sm'>
+              <ToggleGroupItem
+                value='grid'
+                aria-label={t('browse.gridView')}
+                size='sm'
+              >
                 <LayoutGrid className='h-4 w-4' />
               </ToggleGroupItem>
             </ToggleGroup>
@@ -453,15 +580,18 @@ export default function SharePage() {
             </div>
           ) : viewMode === 'list' ? (
             <ShareFileListView
-              fileList={fileList}
+              fileList={sortedFileList}
               scope={shareData.scope}
               onFileClick={handleFileClick}
               onPreview={handlePreview}
               onDownload={handleDownload}
+              orderBy={orderBy}
+              orderDirection={orderDirection}
+              onSortChange={handleSortChange}
             />
           ) : (
             <ShareFileGridView
-              fileList={fileList}
+              fileList={sortedFileList}
               scope={shareData.scope}
               onFileClick={handleFileClick}
               onPreview={handlePreview}
@@ -475,6 +605,11 @@ export default function SharePage() {
           {t('browse.footer')}
         </div>
       </div>
+      <FolderDownloadPanel
+        tasks={folderDownload.tasks}
+        onDismiss={folderDownload.dismissTask}
+        onCancel={folderDownload.cancelTask}
+      />
     </div>
   )
 }

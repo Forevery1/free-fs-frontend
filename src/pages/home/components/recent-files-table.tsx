@@ -11,6 +11,7 @@ import type { FileItem } from '@/types/file'
 import { formatFileListDisplayTime, formatFileSize } from '@/utils/format'
 import { openFilePreviewWithToken } from '@/utils/preview'
 import { FileIcon } from '@/components/file-icon'
+import { GifThumbnail } from '@/components/gif-thumbnail'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -35,11 +36,12 @@ function RecentFilesTableInner({ files }: { files: FileItem[] }) {
         return
       }
       await openFilePreviewWithToken(
-        file.id,
-        import.meta.env.VITE_API_BASE_URL
+        file,
+        import.meta.env.VITE_API_BASE_URL,
+        files
       )
     },
-    [navigate, slug]
+    [files, navigate, slug]
   )
 
   return (
@@ -82,7 +84,15 @@ function RecentFilesTableInner({ files }: { files: FileItem[] }) {
                   <TableCell className='min-h-[48px] align-middle px-4 py-1.5'>
                     <div className='flex min-w-0 items-center gap-2'>
                       <span className='flex size-8 shrink-0 items-center justify-center rounded-md bg-muted/40'>
-                        {file.thumbnailUrl ? (
+                        {file.thumbnailUrl && file.suffix?.toLowerCase() === 'gif' ? (
+                          <GifThumbnail
+                            src={file.thumbnailUrl}
+                            alt={file.displayName}
+                            className='size-7 rounded'
+                            width={56}
+                            height={56}
+                          />
+                        ) : file.thumbnailUrl ? (
                           <img
                             src={file.thumbnailUrl}
                             alt=''

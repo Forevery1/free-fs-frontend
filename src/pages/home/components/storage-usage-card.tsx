@@ -68,7 +68,7 @@ export function StorageOverviewCard({
       <div className='pointer-events-none absolute bottom-0 left-0 h-24 w-24 rounded-full bg-linear-to-tr from-purple-500/10 to-transparent blur-3xl' />
 
       <div className='relative flex min-h-0 flex-1 flex-col'>
-        <h3 className='mb-4 text-base font-bold'>
+        <h3 className='mb-4 text-center text-base font-bold'>
           {t('storageCard.title')}
         </h3>
 

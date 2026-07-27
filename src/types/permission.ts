@@ -4,6 +4,7 @@ export const PermissionCode = {
   FILE_SHARE: 'file:share',
   STORAGE_MANAGE: 'storage:manage',
   MEMBER_MANAGE: 'member:manage',
+  LOG_READ: 'log:read',
 } as const
 
 export type PermissionCodeType =

@@ -81,21 +81,20 @@ export function StorageSettingCard({
   )
   const configData = setting.configData ? JSON.parse(setting.configData) : {}
 
+  const isSensitiveField = (identifier: string): boolean => {
+    const value = identifier.toLowerCase()
+    return (
+      value.includes('secret') ||
+      value.includes('password') ||
+      value.includes('token') ||
+      (value.includes('access') && value.includes('key'))
+    )
+  }
+
   // 脱敏处理
   const maskValue = (identifier: string, value: string): string => {
     const emptyLabel = t('card.notConfigured')
-    const lowerIdentifier = identifier.toLowerCase()
-    const isAccessKey =
-      lowerIdentifier.includes('access') && lowerIdentifier.includes('key')
-    const isSecretKey =
-      (lowerIdentifier.includes('secret') && lowerIdentifier.includes('key')) ||
-      lowerIdentifier.includes('password') ||
-      lowerIdentifier.includes('token')
-
-    if (isSecretKey && !isAccessKey && value) {
-      if (value.length > 8) {
-        return `${value.substring(0, 4)}${'*'.repeat(Math.min(value.length - 8, 20))}${value.substring(value.length - 4)}`
-      }
+    if (isSensitiveField(identifier) && value) {
       return '****'
     }
     return value || emptyLabel
@@ -118,7 +117,9 @@ export function StorageSettingCard({
     )
     configText.push('='.repeat(30))
     schemes.forEach((field) => {
-      const rawValue = configData[field.identifier] || t('card.notConfigured')
+      const rawValue = isSensitiveField(field.identifier)
+        ? '****'
+        : configData[field.identifier] || t('card.notConfigured')
       const displayValue = getEnumLabel(field, rawValue)
       configText.push(`${field.label}: ${displayValue}`)
     })
@@ -133,7 +134,7 @@ export function StorageSettingCard({
       setCopiedConfig(true)
       setTimeout(() => setCopiedConfig(false), 2000)
       toast.success(t('card.copied'))
-    } catch (error) {
+    } catch {
       toast.error(t('card.copyFailed'))
     }
   }
@@ -145,7 +146,7 @@ export function StorageSettingCard({
       setCopiedField(identifier)
       setTimeout(() => setCopiedField(null), 2000)
       toast.success(t('card.copied'))
-    } catch (error) {
+    } catch {
       toast.error(t('card.copyFailed'))
     }
   }
@@ -154,7 +155,9 @@ export function StorageSettingCard({
   const handleOpenEdit = () => {
     const initialData: Record<string, string> = {}
     schemes.forEach((field) => {
-      initialData[field.identifier] = configData[field.identifier] || ''
+      initialData[field.identifier] = isSensitiveField(field.identifier)
+        ? ''
+        : configData[field.identifier] || ''
     })
     setEditFormData(initialData)
     setEditRemark(setting.remark || '')
@@ -180,6 +183,7 @@ export function StorageSettingCard({
     schemes.forEach((field) => {
       if (
         field.validation.required &&
+        !isSensitiveField(field.identifier) &&
         !editFormData[field.identifier]?.trim()
       ) {
         newErrors[field.identifier] = t('card.toastEnterField', {
@@ -239,7 +243,7 @@ export function StorageSettingCard({
       setTimeout(() => {
         window.location.reload()
       }, 800)
-    } catch (error) {
+    } catch {
       setIsLoading(false)
     }
   }
@@ -303,16 +307,20 @@ export function StorageSettingCard({
 
         {/* Actions Menu */}
         <div className='mt-4 flex flex-wrap items-center gap-2'>
-          <Button
-            variant={setting.enabled === 1 ? 'outline' : 'default'}
-            size='sm'
-            onClick={() => setToggleDialogOpen(true)}
-            disabled={isLoading}
-            className='min-w-[60px]'
-          >
-            {setting.enabled === 1 ? t('card.disable') : t('card.enable')}
-          </Button>
-          <div className='h-6 w-px bg-border' />
+          {canManageStorage && (
+            <>
+              <Button
+                variant={setting.enabled === 1 ? 'outline' : 'default'}
+                size='sm'
+                onClick={() => setToggleDialogOpen(true)}
+                disabled={isLoading}
+                className='min-w-[60px]'
+              >
+                {setting.enabled === 1 ? t('card.disable') : t('card.enable')}
+              </Button>
+              <div className='h-6 w-px bg-border' />
+            </>
+          )}
           <Button
             variant='outline'
             size='sm'
@@ -322,24 +330,28 @@ export function StorageSettingCard({
             <Eye className='mr-1.5 h-3 w-3' />
             {t('card.view')}
           </Button>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={handleOpenEdit}
-            className='flex-1 min-w-[70px]'
-          >
-            <Settings className='mr-1.5 h-3 w-3' />
-            {t('card.edit')}
-          </Button>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => setDeleteDialogOpen(true)}
-            className='flex-1 min-w-[70px] text-red-600 hover:border-red-300 hover:text-red-700'
-          >
-            <Trash2 className='mr-1.5 h-3 w-3' />
-            {t('card.delete')}
-          </Button>
+          {canManageStorage && (
+            <>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={handleOpenEdit}
+                className='flex-1 min-w-[70px]'
+              >
+                <Settings className='mr-1.5 h-3 w-3' />
+                {t('card.edit')}
+              </Button>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => setDeleteDialogOpen(true)}
+                className='flex-1 min-w-[70px] text-red-600 hover:border-red-300 hover:text-red-700'
+              >
+                <Trash2 className='mr-1.5 h-3 w-3' />
+                {t('card.delete')}
+              </Button>
+            </>
+          )}
         </div>
       </li>
 
@@ -369,7 +381,10 @@ export function StorageSettingCard({
                       onClick={() =>
                         handleCopyField(
                           field.identifier,
-                          configData[field.identifier]
+                          maskValue(
+                            field.identifier,
+                            configData[field.identifier]
+                          )
                         )
                       }
                     >
@@ -462,6 +477,7 @@ export function StorageSettingCard({
                 ) : (
                   <Input
                     id={`edit-${field.identifier}`}
+                    type={isSensitiveField(field.identifier) ? 'password' : 'text'}
                     value={editFormData[field.identifier] || ''}
                     onChange={(e) => {
                       setEditFormData({
@@ -506,7 +522,8 @@ export function StorageSettingCard({
                 isLoading ||
                 !schemes.every((field) =>
                   field.validation.required
-                    ? editFormData[field.identifier]?.trim()
+                    ? isSensitiveField(field.identifier) ||
+                      editFormData[field.identifier]?.trim()
                     : true
                 )
               }

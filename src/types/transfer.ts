@@ -64,7 +64,7 @@ export interface SSEProgressData {
  * SSE 状态变更数据
  */
 export interface SSEStatusData {
-  status: TaskStatus
+  status: TaskStatus | 'canceled'
   message?: string
 }
 
@@ -150,7 +150,7 @@ export interface FileTransferTaskVO {
   uploadedChunks: number
   chunkSize: number
   storagePlatformSettingId: string
-  status: TaskStatus
+  status: TaskStatus | 'canceled'
   errorMsg?: string
   startTime?: string
   completeTime?: string
@@ -158,4 +158,29 @@ export interface FileTransferTaskVO {
   speed?: number
   remainTime?: number
   uploadedSize?: number
+}
+
+export type FolderDownloadTaskStatus =
+  | 'queued'
+  | 'scanning'
+  | 'packing'
+  | 'downloading'
+  | 'completed'
+  | 'failed'
+  | 'canceled'
+  | 'expired'
+
+export interface FolderDownloadTaskVO {
+  taskId: string
+  folderId: string
+  folderName: string
+  status: FolderDownloadTaskStatus
+  progress: number
+  totalFiles: number
+  processedFiles: number
+  totalBytes: number
+  processedBytes: number
+  zipSize?: number
+  message?: string
+  errorMessage?: string
 }

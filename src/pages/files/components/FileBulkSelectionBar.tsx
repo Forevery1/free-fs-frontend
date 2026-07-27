@@ -3,9 +3,11 @@ import {
   Download,
   Edit,
   Share2,
+  Inbox,
   Heart,
   Move,
   Trash2,
+  Copy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BulkSelectionBar } from '@/components/bulk-selection-bar'
@@ -20,8 +22,10 @@ interface FileBulkSelectionBarProps {
   selectedCount: number
   hasUnfavorited: boolean
   onDownload: () => void
+  onCopy: () => void
   onRename: () => void
   onShare: () => void
+  onCollect?: () => void
   onFavorite: () => void
   onMove: () => void
   onDelete: () => void
@@ -32,8 +36,10 @@ export function FileBulkSelectionBar({
   selectedCount,
   hasUnfavorited,
   onDownload,
+  onCopy,
   onRename,
   onShare,
+  onCollect,
   onFavorite,
   onMove,
   onDelete,
@@ -46,27 +52,48 @@ export function FileBulkSelectionBar({
       onClear={onClear}
       ariaLabel={t('bulk.ariaBar')}
     >
+      <RequirePermission code='file:read'>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type='button'
+              variant='outline'
+              size='icon'
+              className='size-8 shrink-0'
+              onClick={onDownload}
+              aria-label={t('bulk.ariaDownload')}
+            >
+              <Download />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{t('rowMenu.download')}</p>
+          </TooltipContent>
+        </Tooltip>
+      </RequirePermission>
+
+      <RequirePermission code='file:write'>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type='button'
+              variant='outline'
+              size='icon'
+              className='size-8 shrink-0'
+              onClick={onCopy}
+              aria-label={t('bulk.ariaCopy')}
+            >
+              <Copy />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{t('rowMenu.copy')}</p>
+          </TooltipContent>
+        </Tooltip>
+      </RequirePermission>
+
       {selectedCount === 1 ? (
         <>
-          <RequirePermission code='file:read'>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='icon'
-                  className='size-8 shrink-0'
-                  onClick={onDownload}
-                  aria-label={t('bulk.ariaDownload')}
-                >
-                  <Download />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{t('rowMenu.download')}</p>
-              </TooltipContent>
-            </Tooltip>
-          </RequirePermission>
           <RequirePermission code='file:write'>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -108,6 +135,30 @@ export function FileBulkSelectionBar({
           </TooltipContent>
         </Tooltip>
       </RequirePermission>
+
+      {onCollect ? (
+        <RequirePermission code='file:share'>
+          <RequirePermission code='file:write'>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='icon'
+                  className='size-8 shrink-0'
+                  onClick={onCollect}
+                  aria-label={t('rowMenu.collect')}
+                >
+                  <Inbox />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{t('rowMenu.collect')}</p>
+              </TooltipContent>
+            </Tooltip>
+          </RequirePermission>
+        </RequirePermission>
+      ) : null}
 
       <RequirePermission code='file:write'>
         <Tooltip>

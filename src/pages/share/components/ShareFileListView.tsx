@@ -1,6 +1,6 @@
+import type { FileItem, SortOrder } from '@/types/file'
+import { Eye, Download, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { FileItem } from '@/types/file'
-import { Eye, Download } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatFileSize, formatFileTime } from '@/utils/format'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,9 @@ interface ShareFileListViewProps {
   onFileClick: (file: FileItem) => void
   onPreview: (file: FileItem) => void
   onDownload: (file: FileItem) => void
+  orderBy: string
+  orderDirection: SortOrder
+  onSortChange: (field: string, direction: SortOrder) => void
 }
 
 export function ShareFileListView({
@@ -28,6 +31,9 @@ export function ShareFileListView({
   onFileClick,
   onPreview,
   onDownload,
+  orderBy,
+  orderDirection,
+  onSortChange,
 }: ShareFileListViewProps) {
   const { t } = useTranslation('share')
   const hasPreviewPermission = () => scope?.includes('preview') ?? true
@@ -39,19 +45,81 @@ export function ShareFileListView({
     }
   }
 
+  const handleHeaderSort = (field: string) => {
+    const nextDirection: SortOrder =
+      orderBy === field
+        ? orderDirection === 'ASC'
+          ? 'DESC'
+          : 'ASC'
+        : field === 'displayName' || field === 'suffix'
+          ? 'ASC'
+          : 'DESC'
+    onSortChange(field, nextDirection)
+  }
+
+  const renderSortIcon = (field: string) => {
+    if (orderBy !== field) {
+      return <ChevronsUpDown className='size-3.5 opacity-50' />
+    }
+    return orderDirection === 'ASC' ? (
+      <ArrowUp className='size-3.5' />
+    ) : (
+      <ArrowDown className='size-3.5' />
+    )
+  }
+
   return (
     <div className='flex-1 overflow-auto'>
       <Table>
         <TableHeader>
           <TableRow className='bg-muted/50'>
             <TableHead className='font-medium text-muted-foreground'>
-              {t('fileList.name')}
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                className='-ml-3 h-8 gap-1.5 px-3'
+                onClick={() => handleHeaderSort('displayName')}
+              >
+                {t('fileList.name')}
+                {renderSortIcon('displayName')}
+              </Button>
+            </TableHead>
+            <TableHead className='w-28 font-medium text-muted-foreground'>
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                className='-ml-3 h-8 gap-1.5 px-3'
+                onClick={() => handleHeaderSort('suffix')}
+              >
+                {t('fileList.type')}
+                {renderSortIcon('suffix')}
+              </Button>
             </TableHead>
             <TableHead className='w-32 font-medium text-muted-foreground'>
-              {t('fileList.size')}
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                className='-ml-3 h-8 gap-1.5 px-3'
+                onClick={() => handleHeaderSort('size')}
+              >
+                {t('fileList.size')}
+                {renderSortIcon('size')}
+              </Button>
             </TableHead>
             <TableHead className='w-48 font-medium text-muted-foreground'>
-              {t('fileList.modified')}
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                className='-ml-3 h-8 gap-1.5 px-3'
+                onClick={() => handleHeaderSort('updateTime')}
+              >
+                {t('fileList.modified')}
+                {renderSortIcon('updateTime')}
+              </Button>
             </TableHead>
             <TableHead className='w-40 text-center font-medium text-muted-foreground'>
               {t('fileList.actions')}
@@ -83,6 +151,11 @@ export function ShareFileListView({
                 </div>
               </TableCell>
               <TableCell className='text-sm text-muted-foreground'>
+                {file.isDir
+                  ? t('fileList.folderType')
+                  : file.suffix?.toUpperCase() || t('fileList.unknownType')}
+              </TableCell>
+              <TableCell className='text-sm text-muted-foreground'>
                 {file.isDir ? '-' : formatFileSize(file.size)}
               </TableCell>
               <TableCell className='text-sm text-muted-foreground'>
@@ -104,7 +177,7 @@ export function ShareFileListView({
                       <Eye className='h-4 w-4' />
                     </Button>
                   )}
-                  {!file.isDir && hasDownloadPermission() && (
+                  {hasDownloadPermission() && (
                     <Button
                       variant='ghost'
                       size='icon'

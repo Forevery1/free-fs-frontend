@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { useTransferStore } from '@/store/transfer'
 import type { TransferTask, TaskStatus } from '@/types/transfer'
 import { Play, Pause, X, RotateCw } from 'lucide-react'
 import { formatDate, formatFileSize } from '@/utils/format'
@@ -77,7 +76,7 @@ export default function TransferTable({
   onRetry,
 }: TransferTableProps) {
   const { t } = useTranslation('transfer')
-  const { getDisplayData } = useTransferStore()
+  const deferredTasks = React.useDeferredValue(tasks)
 
   const statusMap = React.useMemo(
     () =>
@@ -136,12 +135,17 @@ export default function TransferTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tasks.map((task) => {
-            const displayData = getDisplayData(task.taskId)
+          {deferredTasks.map((task) => {
+            const displayData = {
+              progress: task.progress || 0,
+              speed: task.speed || 0,
+              remainingTime: task.remainingTime || 0,
+            }
 
             return (
               <TableRow
                 key={task.taskId}
+                style={{ contentVisibility: 'auto', containIntrinsicSize: '64px' }}
                 className='border-border/60 hover:bg-muted/25 border-b last:border-b-0'
               >
                 <TableCell className='px-4 py-3.5'>

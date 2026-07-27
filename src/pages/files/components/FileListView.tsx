@@ -11,6 +11,11 @@ import {
   Eye,
   Info,
   Loader2,
+  ArrowUp,
+  ArrowDown,
+  ChevronsUpDown,
+  Copy,
+  Inbox,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatFileListDisplayTime, formatFileSize } from '@/utils/format'
@@ -40,6 +45,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { FileIcon } from '@/components/file-icon'
+import { GifThumbnail } from '@/components/gif-thumbnail'
 import { useFileDragDrop } from '../hooks/useFileDragDrop'
 import { FileListScrollSentinel } from './FileListScrollSentinel'
 
@@ -60,9 +66,13 @@ interface FileListViewProps {
   selectedKeys: string[]
   onSelectionChange: (keys: string[]) => void
   onFileClick: (file: FileItem) => void
+  orderBy: string
+  orderDirection: SortOrder
   onSortChange: (field: string, direction: SortOrder) => void
   onDownload: (file: FileItem | FileItem[]) => void
+  onCopy: (file: FileItem | FileItem[]) => void
   onShare: (file: FileItem) => void
+  onCollect?: (folder: FileItem) => void
   onDelete: (file: FileItem) => void
   onRename: (file: FileItem) => void
   onMove: (file: FileItem) => void
@@ -75,6 +85,7 @@ interface FileListViewProps {
     draggedCount: number
   ) => void
   onBatchShare?: (files: FileItem[]) => void
+  onBatchCopy?: (files: FileItem[]) => void
   onBatchMove?: (files: FileItem[]) => void
   onBatchDelete?: (files: FileItem[]) => void
   hasMore?: boolean
@@ -88,9 +99,13 @@ export function FileListView({
   selectedKeys,
   onSelectionChange,
   onFileClick,
+  orderBy,
+  orderDirection,
   onSortChange,
   onDownload,
+  onCopy,
   onShare,
+  onCollect,
   onDelete,
   onRename,
   onMove,
@@ -100,6 +115,7 @@ export function FileListView({
   onDetail,
   onDragStateChange,
   onBatchShare,
+  onBatchCopy,
   onBatchMove,
   onBatchDelete,
   hasMore = false,
@@ -181,6 +197,29 @@ export function FileListView({
     }
   }
 
+  const handleHeaderSort = (field: string) => {
+    const nextDirection: SortOrder =
+      orderBy === field
+        ? orderDirection === 'ASC'
+          ? 'DESC'
+          : 'ASC'
+        : field === 'displayName' || field === 'suffix'
+          ? 'ASC'
+          : 'DESC'
+    onSortChange(field, nextDirection)
+  }
+
+  const renderSortIcon = (field: string) => {
+    if (orderBy !== field) {
+      return <ChevronsUpDown className='size-3.5 opacity-50' />
+    }
+    return orderDirection === 'ASC' ? (
+      <ArrowUp className='size-3.5' />
+    ) : (
+      <ArrowDown className='size-3.5' />
+    )
+  }
+
   const isAllSelected =
     fileList.length > 0 && selectedKeys.length === fileList.length
 
@@ -201,13 +240,52 @@ export function FileListView({
                 />
               </TableHead>
               <TableHead className='text-muted-foreground h-[48px] px-4 text-left text-sm font-medium'>
-                {t('table.colName')}
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='-ml-3 h-8 gap-1.5 px-3'
+                  onClick={() => handleHeaderSort('displayName')}
+                >
+                  {t('table.colName')}
+                  {renderSortIcon('displayName')}
+                </Button>
               </TableHead>
               <TableHead className='text-muted-foreground h-[48px] w-[7.5rem] px-4 text-left text-sm font-medium'>
-                {t('table.colSize')}
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='-ml-3 h-8 gap-1.5 px-3'
+                  onClick={() => handleHeaderSort('suffix')}
+                >
+                  {t('table.colType')}
+                  {renderSortIcon('suffix')}
+                </Button>
+              </TableHead>
+              <TableHead className='text-muted-foreground h-[48px] w-[7.5rem] px-4 text-left text-sm font-medium'>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='-ml-3 h-8 gap-1.5 px-3'
+                  onClick={() => handleHeaderSort('size')}
+                >
+                  {t('table.colSize')}
+                  {renderSortIcon('size')}
+                </Button>
               </TableHead>
               <TableHead className='text-muted-foreground h-[48px] min-w-[11rem] px-4 text-left text-sm font-medium'>
-                {t('table.colModified')}
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='-ml-3 h-8 gap-1.5 px-3'
+                  onClick={() => handleHeaderSort('updateTime')}
+                >
+                  {t('table.colModified')}
+                  {renderSortIcon('updateTime')}
+                </Button>
               </TableHead>
               <TableHead className='text-muted-foreground h-[48px] w-14 px-2 text-right text-sm font-medium'>
                 <span className='sr-only'>{t('list.ariaMore')}</span>
@@ -227,12 +305,12 @@ export function FileListView({
               selectedKeys.includes(f.id)
             )
             const hasUnfavorited = selectedFiles.some((f) => !f.isFavorite)
-            const downloadableFiles = selectedFiles.filter((f) => !f.isDir)
             return (
               <ContextMenu key={file.id}>
                 <ContextMenuTrigger asChild>
                   <TableRow
                     data-file-id={file.id}
+                    style={{ contentVisibility: 'auto', containIntrinsicSize: '48px' }}
                     className={cn(
                       'group min-h-[48px] border-b-0 transition-colors duration-150',
                       'hover:bg-primary/[0.06]',
@@ -266,10 +344,21 @@ export function FileListView({
                     <TableCell className='min-h-[48px] align-middle px-4 py-1.5'>
                       <div className='flex min-w-0 items-center gap-2'>
                         <div className='flex size-8 shrink-0 items-center justify-center rounded-md bg-muted/40'>
-                          {file.thumbnailUrl ? (
+                          {file.thumbnailUrl && file.suffix?.toLowerCase() === 'gif' ? (
+                            <GifThumbnail
+                              src={file.thumbnailUrl}
+                              alt={file.displayName}
+                              className='size-7 rounded'
+                              width={56}
+                              height={56}
+                            />
+                          ) : file.thumbnailUrl ? (
                             <img
                               src={file.thumbnailUrl}
                               alt={file.displayName}
+                              loading='lazy'
+                              decoding='async'
+                              fetchPriority='low'
                               className='size-7 rounded object-cover pointer-events-none select-none'
                               draggable={false}
                               onContextMenu={(e) => e.preventDefault()}
@@ -292,6 +381,11 @@ export function FileListView({
                           {file.displayName}
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell className='min-h-[48px] align-middle px-4 py-1.5 text-sm text-muted-foreground'>
+                      {file.isDir
+                        ? t('table.folderType')
+                        : file.suffix?.toUpperCase() || t('table.unknownType')}
                     </TableCell>
                     <TableCell
                       className={cn(
@@ -358,7 +452,18 @@ export function FileListView({
                               {t('rowMenu.share')}
                             </DropdownMenuItem>
                           )}
-                          {!file.isDir && canRead && (
+                          {canShare && canWrite && file.isDir && onCollect && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onCollect(file)
+                              }}
+                            >
+                              <Inbox className='size-4' />
+                              {t('rowMenu.collect')}
+                            </DropdownMenuItem>
+                          )}
+                          {canRead && (
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -367,6 +472,17 @@ export function FileListView({
                             >
                               <Download className='size-4' />
                               {t('rowMenu.download')}
+                            </DropdownMenuItem>
+                          )}
+                          {canWrite && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onCopy(file)
+                              }}
+                            >
+                              <Copy className='size-4' />
+                              {t('rowMenu.copy')}
                             </DropdownMenuItem>
                           )}
                           {canWrite && (
@@ -442,15 +558,26 @@ export function FileListView({
                   {isMultiSelected ? (
                     // 多选菜单
                     <>
-                      {canRead && downloadableFiles.length > 0 && (
+                      {canRead && selectedFiles.length > 0 && (
                         <ContextMenuItem
                           onClick={(e) => {
                             e.stopPropagation()
-                            onDownload(downloadableFiles)
+                            onDownload(selectedFiles)
                           }}
                         >
                           <Download className='mr-2 h-4 w-4' />
                           {t('rowMenu.download')}
+                        </ContextMenuItem>
+                      )}
+                      {canWrite && onBatchCopy && selectedFiles.length > 0 && (
+                        <ContextMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onBatchCopy(selectedFiles)
+                          }}
+                        >
+                          <Copy className='mr-2 h-4 w-4' />
+                          {t('rowMenu.copy')}
                         </ContextMenuItem>
                       )}
                       {canShare && onBatchShare && (
@@ -534,6 +661,17 @@ export function FileListView({
                           {t('rowMenu.share')}
                         </ContextMenuItem>
                       )}
+                      {canShare && canWrite && file.isDir && onCollect && (
+                        <ContextMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onCollect(file)
+                          }}
+                        >
+                          <Inbox className='mr-2 h-4 w-4' />
+                          {t('rowMenu.collect')}
+                        </ContextMenuItem>
+                      )}
                       {canWrite && (
                         <ContextMenuItem
                           onClick={(e) => {
@@ -552,7 +690,7 @@ export function FileListView({
                             : t('rowMenu.favorite')}
                         </ContextMenuItem>
                       )}
-                      {!file.isDir && canRead && (
+                      {canRead && (
                         <ContextMenuItem
                           onClick={(e) => {
                             e.stopPropagation()
@@ -561,6 +699,17 @@ export function FileListView({
                         >
                           <Download className='mr-2 h-4 w-4' />
                           {t('rowMenu.download')}
+                        </ContextMenuItem>
+                      )}
+                      {canWrite && (
+                        <ContextMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onCopy(file)
+                          }}
+                        >
+                          <Copy className='mr-2 h-4 w-4' />
+                          {t('rowMenu.copy')}
                         </ContextMenuItem>
                       )}
                       {canWrite && <ContextMenuSeparator />}

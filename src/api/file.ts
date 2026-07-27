@@ -1,4 +1,4 @@
-import { AxiosProgressEvent } from 'axios'
+import type { AxiosProgressEvent } from 'axios'
 import type {
   FileListParams,
   FileItem,
@@ -63,7 +63,7 @@ export function uploadFile(
  * 创建文件夹
  */
 export function createFolder(data: { folderName: string; parentId?: string }) {
-  return request.post<FileItem>('/apis/file/directory', data)
+  return request.post<FileItem>('/apis/file/directory', data, { timeout: 0 })
 }
 
 /**
@@ -85,6 +85,13 @@ export function renameFile(fileId: string, displayName: string) {
  */
 export function moveFiles(dirId: string, fileIds: string[]) {
   return request.put('/apis/file/moves', { dirId, fileIds })
+}
+
+/**
+ * 复制文件或文件夹到指定目录。dirId 为空时复制到工作空间根目录。
+ */
+export function copyFiles(data: { dirId?: string; fileIds: string[] }) {
+  return request.post<void>('/apis/file/copies', data)
 }
 
 /**

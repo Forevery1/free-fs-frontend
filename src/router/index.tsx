@@ -10,6 +10,7 @@ import LoginPage from '@/pages/login'
 import InvitePage from '@/pages/invite'
 import NewWorkspacePage from '@/pages/workspace/new'
 import SharePage from '@/pages/share'
+import FileCollectionPublicPage from '@/pages/collection'
 import StoragePage from '@/pages/storage'
 import TransferPage from '@/pages/transfer'
 import {
@@ -230,6 +231,10 @@ export const router = createBrowserRouter([
   {
     path: '/s/:shareToken',
     element: <SharePage />,
+  },
+  {
+    path: '/collect/:collectionId',
+    element: <FileCollectionPublicPage />,
   },
   {
     path: '/workspace/new',

@@ -15,7 +15,7 @@ import {
   RiUserSettingsFill,
   RiUserSettingsLine,
 } from '@remixicon/react'
-import { X } from 'lucide-react'
+import { ScrollText, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -36,6 +36,7 @@ import { SettingsTransfer } from './transfer'
 import { SettingsWorkspace } from './workspace'
 import { SettingsMembers } from './members'
 import { SettingsRoles } from './roles'
+import { SettingsLogs } from './activity-log'
 import { SidebarNav, type SettingsNavGroup } from './components/sidebar-nav'
 
 interface NavItemConfig {
@@ -93,6 +94,12 @@ function buildNavConfig(
           icon: { line: RiShieldUserLine, fill: RiShieldUserFill },
           permission: 'member:manage',
         },
+        {
+          title: t('nav.logs'),
+          tab: 'logs',
+          icon: { line: ScrollText, fill: ScrollText },
+          permission: 'log:read',
+        },
       ],
     },
   ]
@@ -141,6 +148,12 @@ function SettingsPanel({ tab }: { tab: SettingsTab }) {
     case 'roles':
       return hasPermission('member:manage') ? (
         <SettingsRoles />
+      ) : (
+        <NoPermission />
+      )
+    case 'logs':
+      return hasPermission('log:read') ? (
+        <SettingsLogs />
       ) : (
         <NoPermission />
       )

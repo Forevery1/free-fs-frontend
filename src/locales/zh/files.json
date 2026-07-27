@@ -34,15 +34,29 @@
   },
   "table": {
     "colName": "名称",
+    "colType": "类型",
     "colSize": "大小",
-    "colModified": "修改时间"
+    "colModified": "修改时间",
+    "folderType": "文件夹",
+    "unknownType": "未知"
+  },
+  "sort": {
+    "fieldAria": "选择排序字段",
+    "name": "按名称",
+    "modified": "按修改时间",
+    "type": "按类型",
+    "size": "按大小",
+    "ascending": "升序",
+    "descending": "降序"
   },
   "rowMenu": {
     "preview": "预览",
     "share": "分享",
+    "collect": "文件收集",
     "favorite": "收藏",
     "unfavorite": "取消收藏",
     "download": "下载",
+    "copy": "复制",
     "rename": "重命名",
     "move": "移动到",
     "detail": "详细信息",
@@ -52,11 +66,13 @@
     "allFiles": "全部文件"
   },
   "toolbar": {
-    "searchPlaceholder": "搜索"
+    "searchPlaceholder": "搜索",
+    "paste": "粘贴（{{count}}）"
   },
   "bulk": {
     "ariaBar": "文件列表批量操作",
     "ariaDownload": "下载",
+    "ariaCopy": "复制",
     "ariaRename": "重命名",
     "ariaShare": "分享",
     "ariaFavorite": "收藏",
@@ -278,6 +294,12 @@
     "renameFail": "重命名失败",
     "moveOk": "移动成功",
     "moveFail": "移动失败",
+    "copyOne": "已复制「{{name}}」",
+    "copyMany": "已复制 {{count}} 项",
+    "clipboardEmpty": "剪贴板中没有可粘贴的文件",
+    "clipboardWorkspaceMismatch": "不能跨工作空间粘贴文件",
+    "pasteOk": "已粘贴 {{count}} 项",
+    "pasteFail": "粘贴失败",
     "trashOne": "已移到回收站",
     "trashMany": "已将 {{count}} 个文件移到回收站",
     "trashFail": "删除失败",

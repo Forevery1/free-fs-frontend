@@ -5,6 +5,8 @@
   "workspaceLoadError": "Failed to load workspace. Please try again.",
   "retry": "Retry",
   "backHome": "Back to home",
+  "close": "Close",
+  "cancel": "Cancel",
   "notFound": {
     "title": "Sorry, this page does not exist",
     "back": "Back to home"

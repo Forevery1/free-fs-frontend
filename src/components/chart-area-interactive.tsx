@@ -8,7 +8,10 @@ import {
   type HomeUsedBytesDateType,
   type HomeUsedBytesUnit,
 } from '@/api/home'
-import { formatHomeStorageNumber } from '@/utils/format'
+import {
+  formatHomeStorageDisplay,
+  formatHomeStorageNumber,
+} from '@/utils/format'
 import { cn } from '@/lib/utils'
 import { useIsMobile } from '@/hooks/use-mobile'
 import {
@@ -211,7 +214,7 @@ export function ChartAreaInteractive({
         ) : (
         <ChartContainer
           config={chartConfig}
-          className='min-h-0 w-full flex-1 aspect-auto text-xs [&_.recharts-responsive-container]:h-full'
+          className='min-h-[220px] w-full flex-1 aspect-auto text-xs sm:min-h-[260px] [&_.recharts-responsive-container]:h-full'
         >
           <AreaChart
             data={chartData}
@@ -273,14 +276,15 @@ export function ChartAreaInteractive({
                       day: 'numeric',
                     })
                   }}
-                  formatter={(value, name) => (
+                  formatter={(value) => (
                     <div className='flex w-full items-center justify-between gap-2'>
-                      <span className='text-muted-foreground'>{name}</span>
+                      <span className='text-muted-foreground'>
+                        {t('chart.areaName')}
+                      </span>
                       <span className='font-mono font-medium tabular-nums text-foreground'>
                         {typeof value === 'number'
-                          ? formatHomeStorageNumber(value, unit)
-                          : String(value)}{' '}
-                        {unitLabel}
+                          ? formatHomeStorageDisplay(value, unitLabel, unit)
+                          : String(value)}
                       </span>
                     </div>
                   )}

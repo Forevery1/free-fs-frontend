@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { userApi } from '@/api'
 import { useAuth } from '@/contexts/auth-context'
-import { UserRegisterParams } from '@/types/user'
+import type { UserRegisterParams } from '@/types/user'
 import { User, Lock, Mail, Pen, Info } from 'lucide-react'
 import { toast } from 'sonner'
-import { setToken } from '@/utils/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -56,15 +55,14 @@ export default function RegisterFormContent({ onSwitchForm, inviteToken }: Props
       if (formData.inviteToken) {
         // 有邀请 token：自动登录并进入邀请的工作空间
         try {
-          const res = await userApi.login({
+          await userApi.login({
             loginType: 'password',
             account: formData.username,
             password: formData.password,
             isRemember: true,
           })
-          setToken(res.accessToken, true)
           const userInfo = await userApi.getUserInfo()
-          await login(res.accessToken, userInfo, true)
+          await login(userInfo, true)
           toast.success(t('toast.registerAndJoinSuccess'))
           navigate('/')
         } catch {

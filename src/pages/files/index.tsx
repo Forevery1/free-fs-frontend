@@ -9,6 +9,10 @@ import {
   FolderPlus,
   FolderUp,
   RefreshCw,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  ClipboardPaste,
 } from 'lucide-react'
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -35,6 +39,13 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Toolbar,
   FileBreadcrumb,
   FileGridView,
@@ -48,9 +59,12 @@ import {
   DeleteConfirmDialog,
   FileDetailModal,
   MySharesView,
+  MyCollectionsView,
+  CreateCollectionModal,
 } from './components'
 import UploadModal from './components/UploadModal'
 import UploadPanel from './components/UploadPanel'
+import FolderDownloadPanel from './components/FolderDownloadPanel'
 import { useFileList } from './hooks/useFileList'
 import { useFileOperations } from './hooks/useFileOperations'
 
@@ -75,6 +89,8 @@ export default function FilesPage() {
   // 上传弹窗状态
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [uploadDirectoryMode, setUploadDirectoryMode] = useState(false)
+  const [collectionModalOpen, setCollectionModalOpen] = useState(false)
+  const [collectingFolder, setCollectingFolder] = useState<FileItem | null>(null)
 
   // 拖拽状态
   const [dragTargetName, setDragTargetName] = useState<string | null>(null)
@@ -106,6 +122,7 @@ export default function FilesPage() {
   const isRecentsView = viewType === 'recents'
   const isRecycleBin = viewType === 'recycle'
   const isSharesView = viewType === 'shares'
+  const isCollectionsView = viewType === 'collections'
   const isTypeFilter = !!fileType
   const canRead = hasPermission('file:read')
   const canWrite = hasPermission('file:write')
@@ -140,9 +157,41 @@ export default function FilesPage() {
    */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      const isEditing =
+        target?.matches('input, textarea, select') ||
+        target?.isContentEditable ||
+        Boolean(target?.closest('[contenteditable="true"]'))
+      if (isEditing) return
+
       // ESC 键取消多选
       if (e.key === 'Escape' && selectedKeys.length > 0) {
         clearSelection()
+      }
+
+      const isCommandKey = e.ctrlKey || e.metaKey
+      const key = e.key.toLowerCase()
+
+      // Ctrl/Cmd + C：复制当前选中项到应用内剪贴板
+      if (
+        canWrite &&
+        isCommandKey &&
+        key === 'c' &&
+        selectedFiles.length > 0
+      ) {
+        e.preventDefault()
+        operations.copyToClipboard(selectedFiles)
+      }
+
+      // Ctrl/Cmd + V：粘贴到当前目录
+      if (
+        canWrite &&
+        isCommandKey &&
+        key === 'v' &&
+        operations.clipboardItemCount > 0
+      ) {
+        e.preventDefault()
+        void operations.handlePaste(fileList.currentParentId)
       }
 
       // F2 键重命名（仅当选中单个文件时）
@@ -159,7 +208,14 @@ export default function FilesPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedKeys, fileList.fileList, canWrite])
+  }, [
+    selectedKeys,
+    selectedFiles,
+    fileList.fileList,
+    fileList.currentParentId,
+    canWrite,
+    operations,
+  ])
 
   /**
    * 当目录变化时清空选中状态
@@ -207,6 +263,12 @@ export default function FilesPage() {
     setUploadModalOpen(true)
   }
 
+  const handleOpenCollectionModal = (folder: FileItem) => {
+    if (!canShare || !canWrite || !folder.isDir) return
+    setCollectingFolder(folder)
+    setCollectionModalOpen(true)
+  }
+
   /**
    * 处理文件点击
    */
@@ -240,13 +302,17 @@ export default function FilesPage() {
    * 批量操作
    */
   const handleBatchDownload = () => {
-    const downloadableFiles = selectedFiles.filter((f) => !f.isDir)
-    if (downloadableFiles.length === 0) {
+    if (selectedFiles.length === 0) {
       toast.warning(t('index.toastNoDownload'))
       return
     }
-    operations.handleDownload(downloadableFiles)
+    operations.handleDownload(selectedFiles)
     clearSelection()
+  }
+
+  const handleBatchCopy = () => {
+    if (!canWrite || selectedFiles.length === 0) return
+    operations.copyToClipboard(selectedFiles)
   }
 
   const handleBatchRename = () => {
@@ -258,6 +324,18 @@ export default function FilesPage() {
   const handleBatchShare = () => {
     if (selectedFiles.length === 0) return
     operations.openBatchShareModal(selectedFiles)
+  }
+
+  const handleBatchCollect = () => {
+    if (
+      !canShare ||
+      !canWrite ||
+      selectedFiles.length !== 1 ||
+      !selectedFiles[0].isDir
+    ) {
+      return
+    }
+    handleOpenCollectionModal(selectedFiles[0])
   }
 
   const handleBatchFavorite = async () => {
@@ -311,6 +389,11 @@ export default function FilesPage() {
     return <MySharesView />
   }
 
+  if (isCollectionsView) {
+    if (!canShare) return <NoPermission />
+    return <MyCollectionsView />
+  }
+
   if (!canRead) {
     return <NoPermission />
   }
@@ -344,6 +427,9 @@ export default function FilesPage() {
           onUploadDirectory={handleOpenUploadDirectoryModal}
           onCreateFolder={operations.openCreateFolderModal}
           onRefresh={fileList.refresh}
+          onPaste={() => operations.handlePaste(fileList.currentParentId)}
+          clipboardItemCount={operations.clipboardItemCount}
+          pasting={operations.pasting}
           hideActions={false}
         />
       </div>
@@ -364,18 +450,69 @@ export default function FilesPage() {
               : t('index.totalCount', { total: fileList.total })}
           </span>
         </div>
-        <ToggleGroup
-          type='single'
-          value={viewMode}
-          onValueChange={(value) => value && setViewMode(value as ViewMode)}
-        >
-          <ToggleGroupItem value='grid' aria-label={t('index.ariaGrid')} size='sm'>
-            <LayoutGrid className='h-4 w-4' />
-          </ToggleGroupItem>
-          <ToggleGroupItem value='list' aria-label={t('index.ariaList')} size='sm'>
-            <List className='h-4 w-4' />
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <div className='flex items-center gap-2'>
+          <Select
+            value={fileList.orderBy}
+            onValueChange={(field) =>
+              fileList.handleSortChange(field, fileList.orderDirection)
+            }
+          >
+            <SelectTrigger
+              className='h-8 w-[8.75rem]'
+              size='sm'
+              aria-label={t('sort.fieldAria')}
+            >
+              <ArrowUpDown className='size-4 text-muted-foreground' />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='displayName'>{t('sort.name')}</SelectItem>
+              <SelectItem value='updateTime'>{t('sort.modified')}</SelectItem>
+              <SelectItem value='suffix'>{t('sort.type')}</SelectItem>
+              <SelectItem value='size'>{t('sort.size')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            className='size-8 shrink-0'
+            onClick={() =>
+              fileList.handleSortChange(
+                fileList.orderBy,
+                fileList.orderDirection === 'ASC' ? 'DESC' : 'ASC'
+              )
+            }
+            aria-label={
+              fileList.orderDirection === 'ASC'
+                ? t('sort.ascending')
+                : t('sort.descending')
+            }
+            title={
+              fileList.orderDirection === 'ASC'
+                ? t('sort.ascending')
+                : t('sort.descending')
+            }
+          >
+            {fileList.orderDirection === 'ASC' ? (
+              <ArrowUp className='size-4' />
+            ) : (
+              <ArrowDown className='size-4' />
+            )}
+          </Button>
+          <ToggleGroup
+            type='single'
+            value={viewMode}
+            onValueChange={(value) => value && setViewMode(value as ViewMode)}
+          >
+            <ToggleGroupItem value='grid' aria-label={t('index.ariaGrid')} size='sm'>
+              <LayoutGrid className='h-4 w-4' />
+            </ToggleGroupItem>
+            <ToggleGroupItem value='list' aria-label={t('index.ariaList')} size='sm'>
+              <List className='h-4 w-4' />
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
       </div>
 
       {/* 主内容区域 */}
@@ -442,16 +579,19 @@ export default function FilesPage() {
                       onSelectionChange={setSelectedKeys}
                       onFileClick={handleFileClick}
                       onDownload={operations.handleDownload}
+                      onCopy={operations.copyToClipboard}
                       onShare={operations.openShareModal}
+                      onCollect={canShare && canWrite ? handleOpenCollectionModal : undefined}
                       onDelete={operations.openDeleteConfirm}
                       onRename={operations.openRenameModal}
                       onMove={operations.openMoveModal}
                       onMoveFiles={handleMoveFiles}
                       onFavorite={operations.handleFavorite}
-                      onPreview={operations.openPreview}
+                      onPreview={(file) => operations.openPreview(file, fileList.fileList)}
                       onDetail={operations.openDetail}
                       onDragStateChange={handleDragStateChange}
                       onBatchShare={handleBatchShare}
+                      onBatchCopy={handleBatchCopy}
                       onBatchMove={handleBatchMove}
                       onBatchDelete={handleBatchDelete}
                       hasMore={fileList.hasMore}
@@ -465,18 +605,23 @@ export default function FilesPage() {
                       selectedKeys={selectedKeys}
                       onSelectionChange={setSelectedKeys}
                       onFileClick={handleFileClick}
+                      orderBy={fileList.orderBy}
+                      orderDirection={fileList.orderDirection}
                       onSortChange={fileList.handleSortChange}
                       onDownload={operations.handleDownload}
+                      onCopy={operations.copyToClipboard}
                       onShare={operations.openShareModal}
+                      onCollect={canShare && canWrite ? handleOpenCollectionModal : undefined}
                       onDelete={operations.openDeleteConfirm}
                       onRename={operations.openRenameModal}
                       onMove={operations.openMoveModal}
                       onMoveFiles={handleMoveFiles}
                       onFavorite={operations.handleFavorite}
-                      onPreview={operations.openPreview}
+                      onPreview={(file) => operations.openPreview(file, fileList.fileList)}
                       onDetail={operations.openDetail}
                       onDragStateChange={handleDragStateChange}
                       onBatchShare={handleBatchShare}
+                      onBatchCopy={handleBatchCopy}
                       onBatchMove={handleBatchMove}
                       onBatchDelete={handleBatchDelete}
                       hasMore={fileList.hasMore}
@@ -506,6 +651,17 @@ export default function FilesPage() {
               <ContextMenuItem onClick={handleOpenUploadDirectoryModal}>
                 <FolderUp className='mr-2 h-4 w-4' />
                 {t('index.uploadFolder')}
+              </ContextMenuItem>
+            )}
+            {canWrite && operations.clipboardItemCount > 0 && (
+              <ContextMenuItem
+                disabled={operations.pasting}
+                onClick={() => operations.handlePaste(fileList.currentParentId)}
+              >
+                <ClipboardPaste className='mr-2 h-4 w-4' />
+                {t('toolbar.paste', {
+                  count: operations.clipboardItemCount,
+                })}
               </ContextMenuItem>
             )}
             {canWrite && (
@@ -556,8 +712,14 @@ export default function FilesPage() {
         selectedCount={selectedKeys.length}
         hasUnfavorited={hasUnfavorited}
         onDownload={handleBatchDownload}
+        onCopy={handleBatchCopy}
         onRename={handleBatchRename}
         onShare={handleBatchShare}
+        onCollect={
+          selectedFiles.length === 1 && selectedFiles[0].isDir
+            ? handleBatchCollect
+            : undefined
+        }
         onFavorite={handleBatchFavorite}
         onMove={handleBatchMove}
         onDelete={handleBatchDelete}
@@ -574,6 +736,13 @@ export default function FilesPage() {
 
       {/* 上传进度面板 */}
       <UploadPanel onSuccess={fileList.refresh} />
+
+      {/* 文件夹下载进度面板 */}
+      <FolderDownloadPanel
+        tasks={operations.folderDownloadTasks}
+        onDismiss={operations.dismissFolderDownloadTask}
+        onCancel={operations.cancelFolderDownloadTask}
+      />
 
       {/* 模态框 */}
       <CreateFolderModal
@@ -605,6 +774,12 @@ export default function FilesPage() {
         file={operations.sharingFile}
         files={operations.sharingFiles}
         onSuccess={clearSelection}
+      />
+
+      <CreateCollectionModal
+        open={collectionModalOpen}
+        onOpenChange={setCollectionModalOpen}
+        folder={collectingFolder}
       />
 
       <DeleteConfirmDialog

@@ -58,7 +58,7 @@ export class ProgressCalculator {
   private readonly throttleInterval: number
   private readonly windowSize: number
 
-  constructor(throttleInterval = 100, windowSize = 5000) {
+  constructor(throttleInterval = 300, windowSize = 5000) {
     this.throttleInterval = throttleInterval
     this.windowSize = windowSize
   }

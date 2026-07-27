@@ -1,5 +1,13 @@
 import { useTranslation } from 'react-i18next'
-import { Search, Upload, FolderPlus, RefreshCw, FolderUp } from 'lucide-react'
+import {
+  Search,
+  Upload,
+  FolderPlus,
+  RefreshCw,
+  FolderUp,
+  ClipboardPaste,
+  Loader2,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RequirePermission } from '@/components/require-permission'
@@ -12,6 +20,9 @@ interface ToolbarProps {
   onUploadDirectory?: () => void
   onCreateFolder: () => void
   onRefresh: () => void
+  onPaste?: () => void
+  clipboardItemCount?: number
+  pasting?: boolean
   hideActions?: boolean
 }
 
@@ -23,6 +34,9 @@ export function Toolbar({
   onUploadDirectory,
   onCreateFolder,
   onRefresh,
+  onPaste,
+  clipboardItemCount = 0,
+  pasting = false,
   hideActions = false,
 }: ToolbarProps) {
   const { t } = useTranslation('files')
@@ -49,6 +63,23 @@ export function Toolbar({
       </Button>
       {!hideActions && (
         <>
+          {onPaste && clipboardItemCount > 0 && (
+            <RequirePermission code='file:write'>
+              <Button
+                onClick={onPaste}
+                variant='outline'
+                size='sm'
+                disabled={pasting}
+              >
+                {pasting ? (
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                ) : (
+                  <ClipboardPaste className='mr-2 h-4 w-4' />
+                )}
+                {t('toolbar.paste', { count: clipboardItemCount })}
+              </Button>
+            </RequirePermission>
+          )}
           <RequirePermission code='file:write'>
           <Button onClick={onUpload} size='sm'>
             <Upload className='mr-2 h-4 w-4' />
